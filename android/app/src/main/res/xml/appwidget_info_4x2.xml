@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:minWidth="300dp"
+    android:minHeight="80dp"
+    android:initialLayout="@layout/app_layout_4x2"
+    android:previewImage="@drawable/sunny"
+    android:resizeMode="horizontal|vertical" />
