@@ -40,17 +40,17 @@ class HomeWidgetGlanceAppWidget : GlanceAppWidget() {
     @Composable
     private fun GlanceContent(context: Context, currentState: HomeWidgetGlanceState) {
         // Retrieve widget data (using default values if not set)
-        val prefs = context.getSharedPreferences("prayer_prefs", Context.MODE_PRIVATE)
+        val data = currentState.preferences
+        val timerValue = currentState.preferences.getInt("timer_value", 60)
 
-        val hijriDate = prefs.getString("dateString", "23 ชะอูบาน 1446") ?: "23 ชะอูบาน 1446"
-        val fajrTime = prefs.getString("fajrTime", "05:30") ?: "05:30"
-        val sunriseTime = prefs.getString("sunriseTime", "06:37") ?: "06:37"
-        val dhuhrTime = prefs.getString("dhuhrTime", "12:36") ?: "12:36"
-        val asrTime = prefs.getString("asrTime", "15:52") ?: "15:52"
-        val maghribTime = prefs.getString("maghribTime", "19:32") ?: "19:32"
-        val ishaTime = prefs.getString("ishaTime", "00:31") ?: "00:31"
-        val countdownText = prefs.getString("countdown", "อีก 00:46:05 จะถึงเวลา Sunrise")
-            ?: "อีก 00:46:05 จะถึงเวลา Sunrise"
+        val hijriDate = data.getString("hijriDate", "") ?: ""
+        val fajrTime = data.getString("fajrTime", "") ?: ""
+        val sunriseTime = data.getString("sunriseTime", "") ?: ""
+        val dhuhrTime = data.getString("dhuhrTime", "") ?: ""
+        val asrTime = data.getString("asrTime", "") ?: ""
+        val maghribTime = data.getString("maghribTime", "") ?: ""
+        val ishaTime = data.getString("ishaTime", "") ?: ""
+        val countdownText = data.getString("countdown", "") ?: ""
 
         // Root container: vertical layout, black background, 8dp padding, clickable
         Column(
@@ -72,7 +72,7 @@ class HomeWidgetGlanceAppWidget : GlanceAppWidget() {
 
             // Countdown text (green)
             Text(
-                text = countdownText,
+                text = "Timer: $timerValue sec",
                 style = TextStyle(fontSize = 14.sp, color = ColorProvider(Color(0xFF00FF00)))
             )
 
