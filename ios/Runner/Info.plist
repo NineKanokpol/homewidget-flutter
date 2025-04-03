@@ -24,6 +24,10 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>UILaunchStoryboardName</key>
+	<string>LaunchScreen</string>
+	<key>UIMainStoryboardFile</key>
+	<string>Main</string>
 	<key>NSLocalNetworkUsageDescription</key>
     <string>${PRODUCT_NAME} uses the local network to discover Cast-enabled devices on your WiFi network.</string>
     <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
@@ -34,10 +38,6 @@
     <string>$(PRODUCT_NAME) needs access to use your current location. If you allow access to your location, you can send your current location or a nearby place.</string>
     <key>NSLocationWhenInUseUsageDescription</key>
     <string>$(PRODUCT_NAME) needs access to use your current location. If you allow access to your location, you can send your current location or a nearby place.</string>
-	<key>UILaunchStoryboardName</key>
-	<string>LaunchScreen</string>
-	<key>UIMainStoryboardFile</key>
-	<string>Main</string>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
