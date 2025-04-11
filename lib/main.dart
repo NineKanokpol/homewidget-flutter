@@ -1,15 +1,20 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
-import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_foreground_task/flutter_foreground_task.dart';
+import 'package:flutter_ringtone_player/flutter_ringtone_player.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:home_widget/home_widget.dart';
 import 'package:homewidget/api/api_http.dart';
+import 'package:homewidget/api/res/prayer_time_response.dart';
+import 'package:homewidget/countdown_manager.dart';
+import 'package:homewidget/permission_manager.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -19,105 +24,59 @@ import 'api/model/pray_time_model.dart';
 
 /// Used for Background Updates using Workmanager Plugin
 @pragma("vm:entry-point")
-void callbackDispatcher() async {
+void callbackDispatcher() {
   Workmanager().executeTask((taskName, inputData) async {
-    final now = DateTime.now();
-    return Future.wait<bool?>([
-      HomeWidget.saveWidgetData(
-        'countdown',
-        '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}',
-      ),
-    ]).then((value) async {
-      Future.wait<bool?>([
-        HomeWidget.updateWidget(
-          name: 'HomeWidgetExampleProvider',
-          iOSName: 'HomeWidgetExample',
-        ),
-        if (Platform.isAndroid)
-          HomeWidget.updateWidget(
-            qualifiedAndroidName:
-                'com.example.homewidget.glance.HomeWidgetReceiver',
-          ),
-      ]);
-      return !value.contains(false);
-    });
+    final prefs = await SharedPreferences.getInstance();
+    if (taskName == "updatePrayerTimes") {
+      if (Platform.isAndroid) {
+        try {
+          await Geolocator.getCurrentPosition().then((value) async {
+            await ApiHttp()
+                .fetchPrayerTimes(value.latitude, value.longitude, 7)
+                .then((value) async {
+              await prefs.setString("time1", value.time1);
+              await prefs.setString("time2", value.time2);
+              await prefs.setString("time3", value.time3);
+              await prefs.setString("time4", value.time4);
+              await prefs.setString("time5", value.time5);
+              await prefs.setString("time6", value.time6);
+              Future.wait([
+                HomeWidget.saveWidgetData<String>('fajrTime', "${value.time1}"),
+                HomeWidget.saveWidgetData<String>(
+                    'sunriseTime', "${value.time2}"),
+                HomeWidget.saveWidgetData<String>(
+                    'dhuhrTime', "${value.time3}"),
+                HomeWidget.saveWidgetData<String>('asrTime', "${value.time4}"),
+                HomeWidget.saveWidgetData<String>(
+                    'maghribTime', "${value.time5}"),
+                HomeWidget.saveWidgetData<String>('ishaTime', "${value.time6}"),
+                HomeWidget.saveWidgetData<String>(
+                    'titleDate', "${value.dateString}"),
+              ]);
+            });
+          });
+          return true;
+        } catch (e) {
+          debugPrint("Error in background task: $e");
+          return false;
+        }
+      }
+    }
+    return false;
   });
 }
 
-Future<void> updateCountdown() async {
-  final prefs = await SharedPreferences.getInstance();
-  int lastTime =
-      prefs.getInt("timer_value") ?? 60; // นับถอยหลังเริ่มที่ 60 วินาที
-
-  if (lastTime > 0) {
-    lastTime--;
-  } else {
-    lastTime = 60;
-  }
-
-  // บันทึกค่าใหม่ลง SharedPreferences
-  await prefs.setInt("timer_value", lastTime);
-
-  // อัปเดต Widget
-  await HomeWidget.saveWidgetData<int>("timer_value", lastTime);
-  Future.wait<bool?>([
-    HomeWidget.updateWidget(
-      name: 'HomeWidgetExampleProvider',
-      iOSName: 'HomeWidgetExample',
-    ),
-    if (Platform.isAndroid)
-      HomeWidget.updateWidget(
-        qualifiedAndroidName:
-            'com.example.homewidget.glance.HomeWidgetReceiver',
-      ),
-  ]);
-
-  await AndroidAlarmManager.oneShot(
-    const Duration(seconds: 1),
-    0,
-    updateCountdown,
-    exact: true,
-    wakeup: true,
-  );
-}
-
-/// Called when Doing Background Work initiated from Widget
-@pragma("vm:entry-point")
-Future<void> interactiveCallback(Uri? data) async {
-  if (data?.host == 'titleclicked') {
-    final greetings = [
-      'Hello',
-      'Hallo',
-      'Bonjour',
-      'Hola',
-      'Ciao',
-      '哈洛',
-      '안녕하세요',
-      'xin chào',
-    ];
-    final selectedGreeting = greetings[Random().nextInt(greetings.length)];
-    await HomeWidget.setAppGroupId('YOUR_GROUP_ID');
-    await HomeWidget.saveWidgetData<String>('title', selectedGreeting);
-    await HomeWidget.updateWidget(
-      name: 'HomeWidgetExampleProvider',
-      iOSName: 'HomeWidgetExample',
-    );
-    if (Platform.isAndroid) {
-      await HomeWidget.updateWidget(
-        qualifiedAndroidName:
-            'com.example.homewidget.glance.HomeWidgetReceiver',
-      );
-    }
-  }
-}
-
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  Workmanager().initialize(callbackDispatcher, isInDebugMode: kDebugMode);
-  if(Platform.isAndroid){
-    await AndroidAlarmManager.initialize();
-    await requestExactAlarmPermission();
-  }
+  // if (Platform.isAndroid) {
+  //   await AndroidAlarmManager.initialize();
+  //   await requestExactAlarmPermission();
+  // }
+  // Workmanager().initialize(callbackDispatcher, isInDebugMode: kDebugMode);
+  // Workmanager().registerPeriodicTask(
+  //   "updatePrayerTimesTask",
+  //   "updatePrayerTimes",
+  //   frequency: const Duration(hours: 20),
+  // );
   runApp(const MaterialApp(home: MyApp()));
 }
 
@@ -145,12 +104,15 @@ class _MyAppState extends State<MyApp> {
   Timer? _timer;
   int _start = 10;
   bool isLoadingPage = true;
+  String iosWidgetName = "MyHomeWidget";
+  String groupAppId = "group.com.tnd.homewidget";
+  String dataKey = "text1";
 
   @override
   void initState() {
     super.initState();
-    HomeWidget.setAppGroupId('YOUR_GROUP_ID');
-    HomeWidget.registerInteractivityCallback(interactiveCallback);
+    HomeWidget.setAppGroupId(groupAppId);
+    // HomeWidget.registerInteractivityCallback(interactiveCallback);
     getLocationAndPrayTimeApi();
     _checkPinability();
   }
@@ -167,6 +129,19 @@ class _MyAppState extends State<MyApp> {
     _titleController.dispose();
     _messageController.dispose();
     super.dispose();
+  }
+
+  sendDataFollowPlatform() {
+    if (Platform.isAndroid) {
+      _sendDataAndroid();
+    } else {
+      _sendAndUpdateAndroid();
+    }
+  }
+
+  setDataIos() async {
+    HomeWidget.saveWidgetData<String>('prayerTimes', jsonEncode(prayTimeData));
+    await HomeWidget.updateWidget(iOSName: iosWidgetName);
   }
 
   void startCountdown() async {
@@ -192,39 +167,133 @@ class _MyAppState extends State<MyApp> {
             .fetchPrayerTimes(value.latitude, value.longitude, 7)
             .then((value) {
           setState(() {
-            prayTimeData.dateString = value.dateString;
-            prayTimeData.time1 = value.time1;
-            prayTimeData.time2 = value.time2;
-            prayTimeData.time3 = value.time3;
-            prayTimeData.time4 = value.time4;
-            prayTimeData.time5 = value.time5;
-            prayTimeData.time6 = value.time6;
-            isLoadingPage = false;
+            funcForeGroundTaskInit().then((value1){
+              prayTimeData.dateString = value.dateString;
+              prayTimeData.time1 = value.time1;
+              prayTimeData.time2 = value.time2;
+              prayTimeData.time3 = value.time3;
+              prayTimeData.time4 = value.time4;
+              prayTimeData.time5 = value.time5;
+              prayTimeData.time6 = value.time6;
+              savePrayerTimes(prayTimeData);
+              if (Platform.isAndroid) {
+                pinHomePlatform();
+              } else {
+                setDataIos();
+              }
+              isLoadingPage = false;
+            });
           });
         });
       });
     }
   }
 
-  void startTimer() {
-    const oneSec = const Duration(seconds: 1);
-    _timer = new Timer.periodic(
-      oneSec,
-      (Timer timer) {
-        if (_start == 0) {
-          setState(() {
-            timer.cancel();
-          });
-        } else {
-          setState(() {
-            _start--;
-          });
-        }
-      },
+
+  @pragma("vm:entry-point")
+  Future<void> updateCountdown() async {
+    // Start a timer that checks every second whether the remaining time is less than 5 minutes.
+    Timer.periodic(Duration(seconds: 5), (timer) {
+      DateTime now = DateTime.now();
+      DateTime? nextPrayerTime = getNextPrayerTime();
+      if (nextPrayerTime == null) {
+        debugPrint("No upcoming prayer time available. Cancelling timer.");
+        timer.cancel();
+        return;
+      }
+
+      Duration remaining = nextPrayerTime.difference(now);
+
+      // Use seconds for an accurate check:
+      if (remaining.inSeconds < 5 * 60) {
+        debugPrint("Remaining time (${remaining.inSeconds} sec) is less than 5 minutes; starting countdown update.");
+        CountdownManager.startCountdown();
+        // Optionally, cancel the timer once the countdown has started.
+        timer.cancel();
+      } else {
+        debugPrint("Remaining time (${remaining.inSeconds} sec) is 5 minutes or more; waiting...");
+      }
+    });
+  }
+
+  DateTime? getNextPrayerTime() {
+    // Assume these are your prayer times from API (adjust as necessary)
+    List<String> prayerTimeStrings = [
+      prayTimeData.time1 ?? "",
+      prayTimeData.time2  ?? "",
+      prayTimeData.time3  ?? "",
+      prayTimeData.time4  ?? "",
+      prayTimeData.time5  ?? "",
+      prayTimeData.time6  ?? "",
+    ];
+
+    DateTime now = DateTime.now();
+    List<DateTime> prayerTimes = [];
+
+    for (String timeStr in prayerTimeStrings) {
+      List<String> parts = timeStr.split(':');
+      if (parts.length != 2) continue;
+      int hour = int.parse(parts[0]);
+      int minute = int.parse(parts[1]);
+
+      // Create a DateTime for the prayer today.
+      DateTime prayerTime = DateTime(now.year, now.month, now.day, hour, minute);
+
+      // If the prayer time is earlier than now and it logically belongs
+      // to the early morning of the next day, adjust the date.
+      if (prayerTime.isBefore(now) && hour < 6) {
+        prayerTime = prayerTime.add(Duration(days: 1));
+      }
+      prayerTimes.add(prayerTime);
+    }
+
+    // Sort to get the upcoming prayer time
+    prayerTimes.sort();
+    for (DateTime prayer in prayerTimes) {
+      if (now.isBefore(prayer)) {
+        return prayer;
+      }
+    }
+    return null;
+  }
+
+
+  Future<void> funcForeGroundTaskInit() async{
+    await PermissionManager.requestPermissions();
+    FlutterForegroundTask.initCommunicationPort();
+    FlutterForegroundTask.init(
+      androidNotificationOptions: AndroidNotificationOptions(
+        channelId: 'foreground_service',
+        channelName: 'Foreground Service Notification',
+        channelDescription:
+        'This notification appears when the foreground service is running.',
+        onlyAlertOnce: true,
+      ),
+      iosNotificationOptions: const IOSNotificationOptions(
+        showNotification: false,
+        playSound: false,
+      ),
+      foregroundTaskOptions: ForegroundTaskOptions(
+        eventAction: ForegroundTaskEventAction.repeat(5000),
+        autoRunOnBoot: true,
+        autoRunOnMyPackageReplaced: true,
+        allowWakeLock: true,
+        allowWifiLock: true,
+      ),
     );
   }
 
-  Future _sendData() async {
+  Future<void> savePrayerTimes(PrayTimeModel data) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString("time1", data.time1 ?? "");
+    await prefs.setString("time2", data.time2 ?? "");
+    await prefs.setString("time3", data.time3 ?? "");
+    await prefs.setString("time4", data.time4 ?? "");
+    await prefs.setString("time5", data.time5 ?? "");
+    await prefs.setString("time6", data.time6 ?? "");
+  }
+
+  Future _sendDataAndroid() async {
     try {
       return Future.wait([
         HomeWidget.saveWidgetData<String>('fajrTime', "${prayTimeData.time1}"),
@@ -236,7 +305,7 @@ class _MyAppState extends State<MyApp> {
             'maghribTime', "${prayTimeData.time5}"),
         HomeWidget.saveWidgetData<String>('ishaTime', "${prayTimeData.time6}"),
         HomeWidget.saveWidgetData<String>(
-            'hijriDate', "${prayTimeData.dateString}"),
+            'titleDate', "${prayTimeData.dateString}"),
       ]);
     } on PlatformException catch (exception) {
       debugPrint('Error Sending Data. $exception');
@@ -247,14 +316,13 @@ class _MyAppState extends State<MyApp> {
     try {
       return Future.wait([
         HomeWidget.updateWidget(
-          name: 'HomeWidgetExampleProvider',
-          iOSName: 'HomeWidgetExample',
+          androidName: 'HomeWidgetExampleProvider',
+          // iOSName: 'HomeWidgetExample',
         ),
-        if (Platform.isAndroid)
-          HomeWidget.updateWidget(
-            qualifiedAndroidName:
-                'com.example.homewidget.glance.HomeWidgetReceiver',
-          ),
+        HomeWidget.updateWidget(
+          qualifiedAndroidName:
+              'com.example.homewidget.glance.HomeWidgetReceiver',
+        ),
       ]);
     } on PlatformException catch (exception) {
       debugPrint('Error Updating Widget. $exception');
@@ -276,13 +344,9 @@ class _MyAppState extends State<MyApp> {
     }
   }
 
-  Future<void> _sendAndUpdate() async {
-    await _sendData();
+  Future<void> _sendAndUpdateAndroid() async {
+    await _sendDataAndroid();
     await _updateWidget();
-  }
-
-  void _checkForWidgetLaunch() {
-    HomeWidget.initiallyLaunchedFromHomeWidget().then(_launchedFromWidget);
   }
 
   void _launchedFromWidget(Uri? uri) {
@@ -294,55 +358,6 @@ class _MyAppState extends State<MyApp> {
           content: Text('Here is the URI: $uri'),
         ),
       );
-    }
-  }
-
-  void _startBackgroundUpdate() {
-    Workmanager().registerPeriodicTask(
-      '1',
-      'widgetBackgroundUpdate',
-      frequency: const Duration(minutes: 15),
-    );
-  }
-
-  void _stopBackgroundUpdate() {
-    Workmanager().cancelByUniqueName('1');
-  }
-
-  Future<void> _getInstalledWidgets() async {
-    try {
-      final widgets = await HomeWidget.getInstalledWidgets();
-      if (!mounted) return;
-
-      String getText(HomeWidgetInfo widget) {
-        if (Platform.isIOS) {
-          return 'iOS Family: ${widget.iOSFamily}, iOS Kind: ${widget.iOSKind}';
-        } else {
-          return 'Android Widget id: ${widget.androidWidgetId}, '
-              'Android Class Name: ${widget.androidClassName}, '
-              'Android Label: ${widget.androidLabel}';
-        }
-      }
-
-      await showDialog(
-        context: context,
-        builder: (buildContext) => AlertDialog(
-          title: const Text('Installed Widgets'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('Number of widgets: ${widgets.length}'),
-              const Divider(),
-              for (final widget in widgets)
-                Text(
-                  getText(widget),
-                ),
-            ],
-          ),
-        ),
-      );
-    } on PlatformException catch (exception) {
-      debugPrint('Error getting widget information. $exception');
     }
   }
 
@@ -374,15 +389,17 @@ class _MyAppState extends State<MyApp> {
               : Column(
                   children: [
                     ElevatedButton(
-                      onPressed: _sendAndUpdate,
+                      onPressed: _sendAndUpdateAndroid,
                       child: const Text('Send Data to Widget'),
                     ),
-                      ElevatedButton(
-                        onPressed: () async {
+                    ElevatedButton(
+                      onPressed: () async {
+                        if (Platform.isAndroid) {
                           pinHomePlatform();
-                        },
-                        child: const Text('Pin Widget 4x2'),
-                      ),
+                        }
+                      },
+                      child: const Text('Pin Widget 4x2'),
+                    ),
                   ],
                 ),
         ),
@@ -391,28 +408,21 @@ class _MyAppState extends State<MyApp> {
   }
 
   pinHomePlatform() async {
-    if(Platform.isAndroid){
-      if (_isRequestPinWidgetSupported){
-        final widgets =
-            await HomeWidget.getInstalledWidgets();
-        setState(() {
-          if (widgets.length == 1) {
-            _sendData();
-            startCountdown();
-            HomeWidget.requestPinWidget(
-              qualifiedAndroidName:
-              'com.example.homewidget.glance.HomeWidgetReceiver',
-            );
-          } else {
-            _showAlertDialog(
-                context,
-                "คุณเพิ่ม widget ไม่ได้แล้ว",
-                "เนื่องจากมี widget ที่ pin ไว้แล้ว");
-          }
-        });
-      }
-    }else{
-
+    if (_isRequestPinWidgetSupported) {
+      final widgets = await HomeWidget.getInstalledWidgets();
+      setState(() {
+        if (widgets.length <= 0) {
+          _sendDataAndroid();
+          startCountdown();
+          HomeWidget.requestPinWidget(
+            qualifiedAndroidName:
+            'com.example.homewidget.glance.HomeWidgetReceiver',
+          );
+        } else {
+          _showAlertDialog(context, "คุณเพิ่ม widget ไม่ได้แล้ว",
+              "เนื่องจากมี widget ที่ pin ไว้แล้ว");
+        }
+      });
     }
   }
 
@@ -466,7 +476,7 @@ class _MyAppState extends State<MyApp> {
               ),
             ),
             onPressed: () {
-              Geolocator.openLocationSettings();
+              Navigator.pop(context);
             },
           ),
           CupertinoDialogAction(

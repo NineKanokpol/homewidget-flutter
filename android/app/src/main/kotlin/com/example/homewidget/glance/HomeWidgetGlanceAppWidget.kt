@@ -41,9 +41,9 @@ class HomeWidgetGlanceAppWidget : GlanceAppWidget() {
     private fun GlanceContent(context: Context, currentState: HomeWidgetGlanceState) {
         // Retrieve widget data (using default values if not set)
         val data = currentState.preferences
-        val timerValue = currentState.preferences.getInt("timer_value", 60)
+        val timerValue = currentState.preferences.getString("timer_value", "")
 
-        val hijriDate = data.getString("hijriDate", "") ?: ""
+        val titleDate = data.getString("titleDate", "") ?: ""
         val fajrTime = data.getString("fajrTime", "") ?: ""
         val sunriseTime = data.getString("sunriseTime", "") ?: ""
         val dhuhrTime = data.getString("dhuhrTime", "") ?: ""
@@ -63,8 +63,8 @@ class HomeWidgetGlanceAppWidget : GlanceAppWidget() {
             // Top Row: Hijri date (left) and Location (right)
             Row(modifier = GlanceModifier.fillMaxWidth()) {
                 Text(
-                    text = hijriDate,
-                    style = TextStyle(fontSize = 14.sp, color = ColorProvider(Color.White)),
+                    text = titleDate,
+                    style = TextStyle(fontSize = 18.sp, color = ColorProvider(Color.White)),
                 )
             }
 
@@ -72,8 +72,8 @@ class HomeWidgetGlanceAppWidget : GlanceAppWidget() {
 
             // Countdown text (green)
             Text(
-                text = "Timer: $timerValue sec",
-                style = TextStyle(fontSize = 14.sp, color = ColorProvider(Color(0xFF00FF00)))
+                text = "CountDown $timerValue",
+                style = TextStyle(fontSize = 16.sp, color = ColorProvider(Color(0xFF00FF00)))
             )
 
             Spacer(modifier = GlanceModifier.height(4.dp))
@@ -103,7 +103,7 @@ class HomeWidgetGlanceAppWidget : GlanceAppWidget() {
                     PrayerTimeCell("Asr", asrTime, R.drawable.sunny)
                 }
                 Box(modifier = GlanceModifier.defaultWeight()) {
-                    PrayerTimeCell("Maghrib", maghribTime, R.drawable.sunny)
+                    PrayerTimeCell("Mag", maghribTime, R.drawable.sunny)
                 }
                 Box(modifier = GlanceModifier.defaultWeight()) {
                     PrayerTimeCell("Isha", ishaTime, R.drawable.sunny)
@@ -124,18 +124,18 @@ class HomeWidgetGlanceAppWidget : GlanceAppWidget() {
                 provider = ImageProvider(iconRes),
                 contentDescription = prayerName,
                 modifier = GlanceModifier
-                    .width(28.dp)
-                    .height(28.dp)
+                    .width(30.dp)
+                    .height(30.dp)
             )
             Spacer(modifier = GlanceModifier.height(4.dp))
             Text(
                 text = prayerName,
-                style = TextStyle(fontSize = 12.sp, color = ColorProvider(Color.White))
+                style = TextStyle(fontSize = 16.sp, color = ColorProvider(Color.White))
             )
             Spacer(modifier = GlanceModifier.height(2.dp))
             Text(
                 text = prayerTime,
-                style = TextStyle(fontSize = 12.sp, color = ColorProvider(Color.White))
+                style = TextStyle(fontSize = 16.sp, color = ColorProvider(Color.White))
             )
         }
     }
