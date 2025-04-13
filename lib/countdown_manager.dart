@@ -76,7 +76,7 @@ class CountdownManager {
       // If no prayer times are available, use a default message.
       String displayCountdown;
       if (prayerDateTimes.isEmpty) {
-        displayCountdown = "No prayer times";
+        displayCountdown = "ไม่มีเวลาละหมาดที่กำหนด";
       } else {
         // Sort to get the next upcoming prayer time.
         prayerDateTimes.sort((a, b) => a.compareTo(b));
@@ -89,9 +89,9 @@ class CountdownManager {
           // Format output: if ≥ 60 seconds, display minutes; otherwise, display seconds.
           if (diffSeconds >= 60) {
             int minutesRemaining = diffSeconds ~/ 60;
-            displayCountdown = "$minutesRemaining นาที";
+            displayCountdown = "ถึงเวลาละหมาดในอีก: $minutesRemaining นาที";
           } else {
-            displayCountdown = "$diffSeconds วินาที";
+            displayCountdown = "ถึงเวลาละหมาดในอีก: $diffSeconds วินาที";
           }
 
           // When the countdown reaches 0, you can play the alert sound.
@@ -104,13 +104,13 @@ class CountdownManager {
               asAlarm: true,
             );
             // Optionally: stop countdown or wait for new prayer time.
-            displayCountdown = "0 วินาที";
+            displayCountdown = "ถึงเวลาละหมาดในอีก: 0 วินาที";
             // You might decide to stop the timer until the next prayer update.
           }
         } else {
           // When more than 5 minutes remain, show a default text or the full time.
           // For example, display the scheduled prayer time itself:
-          displayCountdown = "Scheduled: ${nextPrayer.hour.toString().padLeft(2, '0')}:${nextPrayer.minute.toString().padLeft(2, '0')}";
+          displayCountdown = "เวลาถัดไปในการละหมาด: ${nextPrayer.hour.toString().padLeft(2, '0')}:${nextPrayer.minute.toString().padLeft(2, '0')}";
         }
       }
 

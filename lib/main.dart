@@ -4,7 +4,6 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
@@ -21,6 +20,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:workmanager/workmanager.dart';
 
 import 'api/model/pray_time_model.dart';
+import 'countdown_foreground.dart';
 
 /// Used for Background Updates using Workmanager Plugin
 @pragma("vm:entry-point")
@@ -66,6 +66,13 @@ void callbackDispatcher() {
   });
 }
 
+@pragma("vm:entry-point")
+void countdownTaskCallback() {
+  // This callback will run in the background as part of the foreground service.
+  // You can include your countdown logic here.
+  FlutterForegroundTask.setTaskHandler(CountdownTaskHandler());
+}
+
 void main() async {
   // if (Platform.isAndroid) {
   //   await AndroidAlarmManager.initialize();
@@ -102,8 +109,9 @@ class _MyAppState extends State<MyApp> {
 
   bool _isRequestPinWidgetSupported = false;
   Timer? _timer;
-  int _start = 10;
+  int _start = 400;
   bool isLoadingPage = true;
+  bool _timerRunning = false;
   String iosWidgetName = "MyHomeWidget";
   String groupAppId = "group.com.tnd.homewidget";
   String dataKey = "text1";
@@ -140,12 +148,79 @@ class _MyAppState extends State<MyApp> {
   }
 
   setDataIos() async {
-    HomeWidget.saveWidgetData<String>('prayerTimes', jsonEncode(prayTimeData));
+    List<Map<String, String>> prayerTimesList = [
+      {"name": "Fajr", "time": prayTimeData.time1 ?? ""},
+      {"name": "Sunrise", "time": prayTimeData.time2 ?? ""},
+      {"name": "Dhuhr", "time": prayTimeData.time3 ?? ""},
+      {"name": "Asr", "time": prayTimeData.time4 ?? ""},
+      {"name": "Maghrib", "time": prayTimeData.time5 ?? ""},
+      {"name": "Isha", "time": prayTimeData.time6 ?? ""},
+    ];
+    countDownIos();
+    String jsonData = jsonEncode(prayerTimesList);
+    await HomeWidget.saveWidgetData<String>('prayerTimes', jsonData);
+    await HomeWidget.saveWidgetData<String>('text1', prayTimeData.dateString ?? "");
     await HomeWidget.updateWidget(iOSName: iosWidgetName);
   }
 
+  void countDownIos() {
+    if (_timerRunning) return; // Prevent multiple timers
+    _timerRunning = true;
+
+    Timer.periodic(const Duration(seconds: 1), (timer) {
+      final now = DateTime.now();
+      // Replace the following with your real logic to compute the next prayer time.
+      final nextPrayer =getNextPrayerTime();
+      if (nextPrayer == null) {
+        timer.cancel();
+        _timerRunning = false;
+        return;
+      }
+      final remaining = nextPrayer.difference(now);
+
+      // When countdown reaches zero or negative, update the widget accordingly.
+      if (remaining.inSeconds <= 0) {
+        HomeWidget.saveWidgetData<String>('timer_value', "0 sec");
+        HomeWidget.updateWidget(iOSName: iosWidgetName);
+        // Optionally, you can refresh your prayer data here and restart the countdown.
+        return;
+      }
+
+      // If more than 5 minutes remain, display a fixed countdown (e.g., "5 min")
+      String timerValue = formatDuration(remaining);
+      HomeWidget.saveWidgetData<String>('timer_value', timerValue);
+      HomeWidget.updateWidget(iOSName: iosWidgetName);
+      // if (remaining.inSeconds > 300) {
+      //   HomeWidget.saveWidgetData<String>('timer_value', "5 min");
+      //   HomeWidget.updateWidget(iOSName: iosWidgetName);
+      // } else {
+      //   // Otherwise, update the countdown dynamically
+      //   String timerValue = formatDuration(remaining);
+      //   HomeWidget.saveWidgetData<String>('timer_value', timerValue);
+      //   HomeWidget.updateWidget(iOSName: iosWidgetName);
+      // }
+    });
+  }
+
+  String formatDuration(Duration duration) {
+    final minutes = duration.inMinutes;
+    final seconds = duration.inSeconds % 60;
+    return "$minutes min $seconds sec";
+  }
+
   void startCountdown() async {
-    await updateCountdown();
+    startCountdownForeground();
+    // CountdownManager.startCountdown();
+    // await updateCountdown();
+  }
+
+  Future<void> startCountdownForeground() async {
+    // Start the foreground service.
+    await FlutterForegroundTask.startService(
+      notificationTitle: 'Countdown Running',
+      notificationText: 'Your countdown is active',
+      callback: countdownTaskCallback,
+    );
   }
 
   void getLocationAndPrayTimeApi() async {
@@ -167,53 +242,33 @@ class _MyAppState extends State<MyApp> {
             .fetchPrayerTimes(value.latitude, value.longitude, 7)
             .then((value) {
           setState(() {
-            funcForeGroundTaskInit().then((value1){
-              prayTimeData.dateString = value.dateString;
-              prayTimeData.time1 = value.time1;
-              prayTimeData.time2 = value.time2;
-              prayTimeData.time3 = value.time3;
-              prayTimeData.time4 = value.time4;
-              prayTimeData.time5 = value.time5;
-              prayTimeData.time6 = value.time6;
-              savePrayerTimes(prayTimeData);
-              if (Platform.isAndroid) {
-                pinHomePlatform();
-              } else {
+            prayTimeData.dateString = value.dateString;
+            prayTimeData.time1 = value.time1;
+            prayTimeData.time2 = value.time2;
+            prayTimeData.time3 = value.time3;
+            prayTimeData.time4 = value.time4;
+            prayTimeData.time5 = value.time5;
+            prayTimeData.time6 = value.time6;
+            savePrayerTimes(prayTimeData).then((test){
+              if(Platform.isAndroid){
+                funcForeGroundTaskInit().then((value1){
+                  pinHomePlatform();
+                });
+              }else{
                 setDataIos();
               }
-              isLoadingPage = false;
             });
+            isLoadingPage = false;
           });
         });
       });
     }
   }
 
-
-  @pragma("vm:entry-point")
-  Future<void> updateCountdown() async {
-    // Start a timer that checks every second whether the remaining time is less than 5 minutes.
-    Timer.periodic(Duration(seconds: 5), (timer) {
-      DateTime now = DateTime.now();
-      DateTime? nextPrayerTime = getNextPrayerTime();
-      if (nextPrayerTime == null) {
-        debugPrint("No upcoming prayer time available. Cancelling timer.");
-        timer.cancel();
-        return;
-      }
-
-      Duration remaining = nextPrayerTime.difference(now);
-
-      // Use seconds for an accurate check:
-      if (remaining.inSeconds < 5 * 60) {
-        debugPrint("Remaining time (${remaining.inSeconds} sec) is less than 5 minutes; starting countdown update.");
-        CountdownManager.startCountdown();
-        // Optionally, cancel the timer once the countdown has started.
-        timer.cancel();
-      } else {
-        debugPrint("Remaining time (${remaining.inSeconds} sec) is 5 minutes or more; waiting...");
-      }
-    });
+  DateTime? getNextPrayerTimeAndroid() {
+    // For example purposes, always return 5 minutes from now.
+    // Replace with your logic: parse prayTimeData and choose the next prayer.
+    return DateTime.now().add(const Duration(minutes: 5));
   }
 
   DateTime? getNextPrayerTime() {
@@ -274,7 +329,7 @@ class _MyAppState extends State<MyApp> {
         playSound: false,
       ),
       foregroundTaskOptions: ForegroundTaskOptions(
-        eventAction: ForegroundTaskEventAction.repeat(5000),
+        eventAction: ForegroundTaskEventAction.repeat(1000),
         autoRunOnBoot: true,
         autoRunOnMyPackageReplaced: true,
         allowWakeLock: true,

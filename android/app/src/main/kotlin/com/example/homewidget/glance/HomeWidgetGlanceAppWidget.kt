@@ -72,7 +72,7 @@ class HomeWidgetGlanceAppWidget : GlanceAppWidget() {
 
             // Countdown text (green)
             Text(
-                text = "CountDown $timerValue",
+                text = "$timerValue",
                 style = TextStyle(fontSize = 16.sp, color = ColorProvider(Color(0xFF00FF00)))
             )
 

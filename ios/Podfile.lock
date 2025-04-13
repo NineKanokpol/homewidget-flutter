@@ -1,5 +1,9 @@
 PODS:
   - Flutter (1.0.0)
+  - flutter_foreground_task (0.0.1):
+    - Flutter
+  - flutter_ringtone_player (0.0.1):
+    - Flutter
   - geolocator_apple (1.2.0):
     - Flutter
   - home_widget (0.0.1):
@@ -17,6 +21,8 @@ PODS:
 
 DEPENDENCIES:
   - Flutter (from `Flutter`)
+  - flutter_foreground_task (from `.symlinks/plugins/flutter_foreground_task/ios`)
+  - flutter_ringtone_player (from `.symlinks/plugins/flutter_ringtone_player/ios`)
   - geolocator_apple (from `.symlinks/plugins/geolocator_apple/ios`)
   - home_widget (from `.symlinks/plugins/home_widget/ios`)
   - path_provider_foundation (from `.symlinks/plugins/path_provider_foundation/darwin`)
@@ -27,6 +33,10 @@ DEPENDENCIES:
 EXTERNAL SOURCES:
   Flutter:
     :path: Flutter
+  flutter_foreground_task:
+    :path: ".symlinks/plugins/flutter_foreground_task/ios"
+  flutter_ringtone_player:
+    :path: ".symlinks/plugins/flutter_ringtone_player/ios"
   geolocator_apple:
     :path: ".symlinks/plugins/geolocator_apple/ios"
   home_widget:
@@ -42,6 +52,8 @@ EXTERNAL SOURCES:
 
 SPEC CHECKSUMS:
   Flutter: e0871f40cf51350855a761d2e70bf5af5b9b5de7
+  flutter_foreground_task: 21ef182ab0a29a3005cc72cd70e5f45cb7f7f817
+  flutter_ringtone_player: 15eba85187230b87b2512f0e1b92225618bc03e7
   geolocator_apple: 9bcea1918ff7f0062d98345d238ae12718acfbc1
   home_widget: 0434835a4c9a75704264feff6be17ea40e0f0d57
   path_provider_foundation: 2b6b4c569c0fb62ec74538f866245ac84301af46

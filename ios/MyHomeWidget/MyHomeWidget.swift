@@ -12,6 +12,7 @@ struct SimpleEntry: TimelineEntry {
     let date: Date
     let text: String
     let additionalText: String
+    let timerValue: String
     let prayerTimes: [PrayerTime]
 }
 
@@ -23,8 +24,14 @@ struct Provider: TimelineProvider {
         let userDefaults = UserDefaults(suiteName: "group.com.tnd.homewidget")
         let textFromFlutterApp = userDefaults?.string(forKey: "text1") ?? "0"
         let additionalTextFromFlutterApp = userDefaults?.string(forKey: "text2") ?? "default"
-        let prayerTimes = getPrayerTimesFromFlutter()
-        return SimpleEntry(date: Date(), text: textFromFlutterApp, additionalText: additionalTextFromFlutterApp, prayerTimes: prayerTimes)
+        let timerValue = userDefaults?.string(forKey: "timer_value") ?? "Timer: N/A"
+        return SimpleEntry(
+            date: Date(),
+            text: textFromFlutterApp,
+            additionalText: additionalTextFromFlutterApp,
+            timerValue: timerValue,
+            prayerTimes: getPrayerTimesFromFlutter()
+        )
     }
 
     // Decode prayer times from a JSON string stored in UserDefaults.
@@ -37,29 +44,37 @@ struct Provider: TimelineProvider {
         }
         // Fallback default data.
         return [
-            PrayerTime(name: "Fajr", time: "05:05"),
-            PrayerTime(name: "Sunrise", time: "06:12"),
-            PrayerTime(name: "Dhuhr", time: "12:26"),
-            PrayerTime(name: "Asr", time: "15:37"),
-            PrayerTime(name: "Maghrib", time: "18:30"),
-            PrayerTime(name: "Isha", time: "00:21")
+            PrayerTime(name: "Fajr", time: ""),
+            PrayerTime(name: "Sunrise", time: ""),
+            PrayerTime(name: "Dhuhr", time: ""),
+            PrayerTime(name: "Asr", time: ""),
+            PrayerTime(name: "Maghrib", time: ""),
+            PrayerTime(name: "Isha", time: "")
         ]
     }
 
     func placeholder(in context: Context) -> SimpleEntry {
-        SimpleEntry(date: Date(), text: "0", additionalText: "placeholder", prayerTimes: getPrayerTimesFromFlutter())
-    }
+            SimpleEntry(
+                date: Date(),
+                text: "0",
+                additionalText: "placeholder",
+                timerValue: "Timer: 0 sec",
+                prayerTimes: getPrayerTimesFromFlutter()
+            )
+        }
 
-    func getSnapshot(in context: Context, completion: @escaping (SimpleEntry) -> ()) {
-        let entry = getDataFromFlutter()
-        completion(entry)
-    }
+        func getSnapshot(in context: Context, completion: @escaping (SimpleEntry) -> ()) {
+            let entry = getDataFromFlutter()
+            completion(entry)
+        }
 
-    func getTimeline(in context: Context, completion: @escaping (Timeline<Entry>) -> ()) {
-        let entry = getDataFromFlutter()
-        let timeline = Timeline(entries: [entry], policy: .atEnd)
-        completion(timeline)
-    }
+        func getTimeline(in context: Context, completion: @escaping (Timeline<SimpleEntry>) -> ()) {
+            let entry = getDataFromFlutter()
+            // For testing, you could force a refresh in a few minutes:
+            let nextUpdate = Calendar.current.date(byAdding: .minute, value: 5, to: Date())!
+            let timeline = Timeline(entries: [entry], policy: .after(nextUpdate))
+            completion(timeline)
+        }
 }
 
 // MARK: - Widget View
@@ -72,7 +87,7 @@ struct MyHomeWidgetEntryView: View {
             VStack(alignment: .leading, spacing: 8) {
                 // Top row: date/title on the left, timer on the right
                 HStack {
-                    Text("5 เชาวาล 1446")
+                    Text(entry.text)
                         .foregroundColor(.white)
                         .font(.headline)
                         // Ensure it doesn't wrap
@@ -81,7 +96,7 @@ struct MyHomeWidgetEntryView: View {
 
                     Spacer()
 
-                    Text("Timer: 59 sec")
+                    Text(entry.timerValue)
                         .foregroundColor(.green)
                         .font(.headline)
                         // Ensure it doesn't wrap
@@ -157,6 +172,7 @@ struct MyHomeWidget_Previews: PreviewProvider {
                 date: Date(),
                 text: "Sample Text",
                 additionalText: "Additional Sample",
+                timerValue: "Timer: 0 sec",
                 prayerTimes: [
                     PrayerTime(name: "Fajr", time: "05:05"),
                     PrayerTime(name: "Sunrise", time: "06:12"),
@@ -172,6 +188,7 @@ struct MyHomeWidget_Previews: PreviewProvider {
                 date: Date(),
                 text: "Sample Text",
                 additionalText: "Additional Sample",
+                timerValue: "Timer: 0 sec",
                 prayerTimes: [
                     PrayerTime(name: "Fajr", time: "05:05"),
                     PrayerTime(name: "Sunrise", time: "06:12"),
@@ -187,6 +204,7 @@ struct MyHomeWidget_Previews: PreviewProvider {
                 date: Date(),
                 text: "Sample Text",
                 additionalText: "Additional Sample",
+                timerValue: "Timer: 0 sec",
                 prayerTimes: [
                     PrayerTime(name: "Fajr", time: "05:05"),
                     PrayerTime(name: "Sunrise", time: "06:12"),
