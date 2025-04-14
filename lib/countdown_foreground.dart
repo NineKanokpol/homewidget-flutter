@@ -45,8 +45,8 @@ class CountdownTaskHandler extends TaskHandler {
         time1,
         time2,
         time3,
-        "18:50",
-        time5,
+        time4,
+        "23:17",
         time6
       ];
 

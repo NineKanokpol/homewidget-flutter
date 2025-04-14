@@ -14,6 +14,7 @@ import 'package:homewidget/api/api_http.dart';
 import 'package:homewidget/api/res/prayer_time_response.dart';
 import 'package:homewidget/countdown_manager.dart';
 import 'package:homewidget/permission_manager.dart';
+import 'package:homewidget/services/live_activity_service.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -74,6 +75,7 @@ void countdownTaskCallback() {
 }
 
 void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
   // if (Platform.isAndroid) {
   //   await AndroidAlarmManager.initialize();
   //   await requestExactAlarmPermission();
@@ -108,8 +110,6 @@ class _MyAppState extends State<MyApp> {
   PrayTimeModel prayTimeData = PrayTimeModel();
 
   bool _isRequestPinWidgetSupported = false;
-  Timer? _timer;
-  int _start = 400;
   bool isLoadingPage = true;
   bool _timerRunning = false;
   String iosWidgetName = "MyHomeWidget";
@@ -156,11 +156,16 @@ class _MyAppState extends State<MyApp> {
       {"name": "Maghrib", "time": prayTimeData.time5 ?? ""},
       {"name": "Isha", "time": prayTimeData.time6 ?? ""},
     ];
-    countDownIos();
+    // countDownIos();
     String jsonData = jsonEncode(prayerTimesList);
     await HomeWidget.saveWidgetData<String>('prayerTimes', jsonData);
     await HomeWidget.saveWidgetData<String>('text1', prayTimeData.dateString ?? "");
     await HomeWidget.updateWidget(iOSName: iosWidgetName);
+    await LiveActivityService.requestPushNotificationPermission()
+        .then((value) async {
+      await LiveActivityService.registerDevice();
+      await LiveActivityService().listener();
+    });
   }
 
   void countDownIos() {
@@ -322,7 +327,10 @@ class _MyAppState extends State<MyApp> {
         channelName: 'Foreground Service Notification',
         channelDescription:
         'This notification appears when the foreground service is running.',
+        priority: NotificationPriority.HIGH,
         onlyAlertOnce: true,
+        enableVibration: true,
+        playSound: true,
       ),
       iosNotificationOptions: const IOSNotificationOptions(
         showNotification: false,
@@ -454,6 +462,19 @@ class _MyAppState extends State<MyApp> {
                         }
                       },
                       child: const Text('Pin Widget 4x2'),
+                    ),
+                    CupertinoButton.filled(
+                      disabledColor: Colors.pinkAccent,
+                      child: const Text("Start Live Activity"),
+                      onPressed: () async {
+                        LiveActivityService().startLiveActivity(
+                            data: LiveActivityModel(
+                              carModel: "Corolla",
+                              driverCode: "XJUAKF",
+                              minutesToArrive: 10,
+                              carArriveProgress: 0,
+                            ));
+                      },
                     ),
                   ],
                 ),

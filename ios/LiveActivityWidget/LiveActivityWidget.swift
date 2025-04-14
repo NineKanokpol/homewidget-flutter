@@ -1,7 +1,12 @@
+//
+//  LiveActivityWidget.swift
+//  LiveActivityWidget
+//
+//  Created by Kanokpol Tipkan on 14/4/2568 BE.
+//
+
 import WidgetKit
 import SwiftUI
-
-// MARK: - Data Models
 
 struct PrayerTime: Codable, Hashable {
     let name: String
@@ -16,11 +21,9 @@ struct SimpleEntry: TimelineEntry {
     let prayerTimes: [PrayerTime]
 }
 
-// MARK: - Timeline Provider
-
 struct Provider: TimelineProvider {
-    // Retrieve data from Flutter via shared UserDefaults.
-    private func getDataFromFlutter() -> SimpleEntry {
+
+private func getDataFromFlutter() -> SimpleEntry {
         let userDefaults = UserDefaults(suiteName: "group.com.tnd.homewidget")
         let textFromFlutterApp = userDefaults?.string(forKey: "text1") ?? "0"
         let additionalTextFromFlutterApp = userDefaults?.string(forKey: "text2") ?? "default"
@@ -54,105 +57,104 @@ struct Provider: TimelineProvider {
     }
 
     func placeholder(in context: Context) -> SimpleEntry {
-            SimpleEntry(
-                date: Date(),
-                text: "0",
-                additionalText: "placeholder",
-                timerValue: "Timer: 0 sec",
-                prayerTimes: getPrayerTimesFromFlutter()
-            )
-        }
+                SimpleEntry(
+                    date: Date(),
+                    text: "0",
+                    additionalText: "placeholder",
+                    timerValue: "Timer: 0 sec",
+                    prayerTimes: getPrayerTimesFromFlutter()
+                )
+            }
 
-        func getSnapshot(in context: Context, completion: @escaping (SimpleEntry) -> ()) {
-            let entry = getDataFromFlutter()
-            completion(entry)
-        }
+    func getSnapshot(in context: Context, completion: @escaping (SimpleEntry) -> ()) {
+                let entry = getDataFromFlutter()
+                completion(entry)
+            }
 
-        func getTimeline(in context: Context, completion: @escaping (Timeline<SimpleEntry>) -> ()) {
-            let entry = getDataFromFlutter()
-            // For testing, you could force a refresh in a few minutes:
-            let nextUpdate = Calendar.current.date(byAdding: .minute, value: 5, to: Date())!
-            let timeline = Timeline(entries: [entry], policy: .after(nextUpdate))
-            completion(timeline)
-        }
+    func getTimeline(in context: Context, completion: @escaping (Timeline<SimpleEntry>) -> ()) {
+                let entry = getDataFromFlutter()
+                // For testing, you could force a refresh in a few minutes:
+                let nextUpdate = Calendar.current.date(byAdding: .minute, value: 5, to: Date())!
+                let timeline = Timeline(entries: [entry], policy: .after(nextUpdate))
+                completion(timeline)
+            }
+
+//    func relevances() async -> WidgetRelevances<Void> {
+//        // Generate a list containing the contexts this widget is relevant in.
+//    }
 }
 
-// MARK: - Widget View
+struct LiveActivityWidgetEntryView : View {
+     var entry: SimpleEntry
 
-struct MyHomeWidgetEntryView: View {
-    var entry: SimpleEntry
+        var body: some View {
+            ZStack {
+                VStack(alignment: .leading, spacing: 8) {
+                    // Top row: date/title on the left, timer on the right
+                    HStack {
+                        Text(entry.text)
+                            .foregroundColor(.white)
+                            .font(.headline)
+                            // Ensure it doesn't wrap
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
 
-    var body: some View {
-        ZStack {
-            VStack(alignment: .leading, spacing: 8) {
-                // Top row: date/title on the left, timer on the right
-                HStack {
-                    Text(entry.text)
-                        .foregroundColor(.white)
-                        .font(.headline)
-                        // Ensure it doesn't wrap
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.8)
+                        Spacer()
 
-                    Spacer()
+                        Text(entry.timerValue)
+                            .foregroundColor(.green)
+                            .font(.headline)
+                            // Ensure it doesn't wrap
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
+                    }
 
-                    Text(entry.timerValue)
-                        .foregroundColor(.green)
-                        .font(.headline)
-                        // Ensure it doesn't wrap
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.8)
-                }
+                    // Divider
+                    Divider()
+                        .background(Color.white)
 
-                // Divider
-                Divider()
-                    .background(Color.white)
+                    // Prayer times row
+                    HStack(alignment: .center, spacing: 16) {
+                        ForEach(entry.prayerTimes, id: \.name) { prayer in
+                            VStack(spacing: 4) {
+                                // Circle icon
+                                Circle()
+                                    .fill(Color.yellow)
+                                    .frame(width: 24, height: 24)
 
-                // Prayer times row
-                HStack(alignment: .center, spacing: 16) {
-                    ForEach(entry.prayerTimes, id: \.name) { prayer in
-                        VStack(spacing: 4) {
-                            // Circle icon
-                            Circle()
-                                .fill(Color.yellow)
-                                .frame(width: 24, height: 24)
+                                // Prayer name
+                                Text(prayer.name)
+                                    .foregroundColor(.white)
+                                    .font(.caption)
+                                    .lineLimit(1)
+                                    .minimumScaleFactor(0.8)
 
-                            // Prayer name
-                            Text(prayer.name)
-                                .foregroundColor(.white)
-                                .font(.caption)
-                                .lineLimit(1)
-                                .minimumScaleFactor(0.8)
-
-                            // Prayer time
-                            Text(prayer.time)
-                                .foregroundColor(.white)
-                                .font(.caption)
-                                .lineLimit(1)
-                                .minimumScaleFactor(0.8)
+                                // Prayer time
+                                Text(prayer.time)
+                                    .foregroundColor(.white)
+                                    .font(.caption)
+                                    .lineLimit(1)
+                                    .minimumScaleFactor(0.8)
+                            }
                         }
                     }
                 }
+                // Slight padding around content to match the screenshot spacing
+                .padding(8)
             }
-            // Slight padding around content to match the screenshot spacing
-            .padding(8)
         }
-    }
 }
 
-
-// MARK: - Widget Configuration
-
-struct MyHomeWidget: Widget {
-    let kind: String = "MyHomeWidget"
+struct LiveActivityWidget: Widget {
+    let kind: String = "LiveActivityWidget"
 
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: Provider()) { entry in
             if #available(iOS 17.0, *) {
-                MyHomeWidgetEntryView(entry: entry)
+                LiveActivityWidgetEntryView(entry: entry)
                     .containerBackground(.fill.tertiary, for: .widget)
             } else {
-                MyHomeWidgetEntryView(entry: entry)
+                LiveActivityWidgetEntryView(entry: entry)
                     .padding()
                     .background()
             }
@@ -162,13 +164,11 @@ struct MyHomeWidget: Widget {
     }
 }
 
-// MARK: - Widget Preview
-
 #if DEBUG
 struct MyHomeWidget_Previews: PreviewProvider {
     static var previews: some View {
         Group {
-            MyHomeWidgetEntryView(entry: SimpleEntry(
+            LiveActivityWidgetEntryView(entry: SimpleEntry(
                 date: Date(),
                 text: "Sample Text",
                 additionalText: "Additional Sample",
@@ -184,7 +184,7 @@ struct MyHomeWidget_Previews: PreviewProvider {
             ))
             .previewContext(WidgetPreviewContext(family: .systemSmall))
 
-            MyHomeWidgetEntryView(entry: SimpleEntry(
+            LiveActivityWidgetEntryView(entry: SimpleEntry(
                 date: Date(),
                 text: "Sample Text",
                 additionalText: "Additional Sample",
@@ -200,7 +200,7 @@ struct MyHomeWidget_Previews: PreviewProvider {
             ))
             .previewContext(WidgetPreviewContext(family: .systemMedium))
 
-            MyHomeWidgetEntryView(entry: SimpleEntry(
+            LiveActivityWidgetEntryView(entry: SimpleEntry(
                 date: Date(),
                 text: "Sample Text",
                 additionalText: "Additional Sample",
@@ -219,3 +219,4 @@ struct MyHomeWidget_Previews: PreviewProvider {
     }
 }
 #endif
+
