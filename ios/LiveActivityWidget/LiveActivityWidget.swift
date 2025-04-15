@@ -17,7 +17,6 @@ struct SimpleEntry: TimelineEntry {
     let date: Date
     let text: String
     let additionalText: String
-    let timerValue: String
     let prayerTimes: [PrayerTime]
 }
 
@@ -27,12 +26,10 @@ private func getDataFromFlutter() -> SimpleEntry {
         let userDefaults = UserDefaults(suiteName: "group.com.tnd.homewidget")
         let textFromFlutterApp = userDefaults?.string(forKey: "text1") ?? "0"
         let additionalTextFromFlutterApp = userDefaults?.string(forKey: "text2") ?? "default"
-        let timerValue = userDefaults?.string(forKey: "timer_value") ?? "Timer: N/A"
         return SimpleEntry(
             date: Date(),
             text: textFromFlutterApp,
             additionalText: additionalTextFromFlutterApp,
-            timerValue: timerValue,
             prayerTimes: getPrayerTimesFromFlutter()
         )
     }
@@ -61,7 +58,6 @@ private func getDataFromFlutter() -> SimpleEntry {
                     date: Date(),
                     text: "0",
                     additionalText: "placeholder",
-                    timerValue: "Timer: 0 sec",
                     prayerTimes: getPrayerTimesFromFlutter()
                 )
             }
@@ -99,14 +95,7 @@ struct LiveActivityWidgetEntryView : View {
                             .lineLimit(1)
                             .minimumScaleFactor(0.8)
 
-                        Spacer()
 
-                        Text(entry.timerValue)
-                            .foregroundColor(.green)
-                            .font(.headline)
-                            // Ensure it doesn't wrap
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.8)
                     }
 
                     // Divider
@@ -172,7 +161,6 @@ struct MyHomeWidget_Previews: PreviewProvider {
                 date: Date(),
                 text: "Sample Text",
                 additionalText: "Additional Sample",
-                timerValue: "Timer: 0 sec",
                 prayerTimes: [
                     PrayerTime(name: "Fajr", time: "05:05"),
                     PrayerTime(name: "Sunrise", time: "06:12"),
@@ -188,7 +176,6 @@ struct MyHomeWidget_Previews: PreviewProvider {
                 date: Date(),
                 text: "Sample Text",
                 additionalText: "Additional Sample",
-                timerValue: "Timer: 0 sec",
                 prayerTimes: [
                     PrayerTime(name: "Fajr", time: "05:05"),
                     PrayerTime(name: "Sunrise", time: "06:12"),
@@ -204,7 +191,6 @@ struct MyHomeWidget_Previews: PreviewProvider {
                 date: Date(),
                 text: "Sample Text",
                 additionalText: "Additional Sample",
-                timerValue: "Timer: 0 sec",
                 prayerTimes: [
                     PrayerTime(name: "Fajr", time: "05:05"),
                     PrayerTime(name: "Sunrise", time: "06:12"),

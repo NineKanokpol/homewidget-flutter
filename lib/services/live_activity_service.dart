@@ -2,11 +2,14 @@ import 'dart:async';
 import 'dart:developer';
 import 'package:flutter/services.dart';
 
+import '../countdown_manager.dart';
+
 class LiveActivityModel {
   final String carModel;
   final String driverCode;
   final int minutesToArrive;
   final int carArriveProgress;
+
   LiveActivityModel({
     required this.carModel,
     required this.driverCode,
@@ -37,7 +40,6 @@ class LiveActivityService {
             break;
           case 'pushToUpdateToken':
             dynamic tokenValue = event['value'];
-
             log("pushToUpdateToken -> $tokenValue");
             break;
         }
@@ -61,6 +63,7 @@ class LiveActivityService {
     }
   }
 
+  // 1) Just start the live activity; don’t call the countdown from here.
   Future<void> startLiveActivity({required LiveActivityModel data}) async {
     try {
       await platform.invokeMethod(
@@ -70,9 +73,10 @@ class LiveActivityService {
     } on PlatformException catch (e) {
       log("Failed to start live activity: '${e.message}'.");
     }
-    print('data ${data.toJson()}');
+    print('startLiveActivity: data -> ${data.toJson()}');
   }
 
+  // 2) Update with new data (e.g., every second).
   Future<void> updateLiveActivity({required LiveActivityModel data}) async {
     try {
       await platform.invokeMethod(
@@ -80,17 +84,44 @@ class LiveActivityService {
         data.toJson(),
       );
     } on PlatformException catch (e) {
-      log("Failed to start live activity: '${e.message}'.");
+      log("Failed to update live activity: '${e.message}'.");
     }
   }
 
+  // 3) End the activity once the countdown hits zero.
   Future<void> endLiveActivity() async {
     try {
-      await platform.invokeMethod(
-        'endLiveActivity',
-      );
+      await platform.invokeMethod('endLiveActivity');
     } on PlatformException catch (e) {
-      log("Failed to start live activity: '${e.message}'.");
+      log("Failed to end live activity: '${e.message}'.");
     }
+  }
+
+  // 4) Start countdown from 300 seconds in one place.
+  //    Notice we do NOT create a new LiveActivityService here
+  //    nor do we call startLiveActivity() from inside another start method.
+  Future<void> startLiveActivityWithCountdown() async {
+    const int durationSeconds = 300;
+    // Calculate the expiration time.
+    final DateTime expirationTime = DateTime.now().add(Duration(seconds: durationSeconds));
+
+    // Use the duration (in seconds) for initial display.
+    LiveActivityModel initialData = LiveActivityModel(
+      carModel: 'Sedan',
+      driverCode: 'DR123',
+      minutesToArrive: durationSeconds, // initial value for UI purposes
+      carArriveProgress: 0,
+    );
+
+    // Step A: Start the live activity.
+    await startLiveActivity(data: initialData);
+
+    // Step B: Kick off the countdown, passing the expiration time.
+    CountdownManager countdownManager = CountdownManager(
+      expirationTime: expirationTime,
+      liveActivityService: this, // Use THIS instance
+      baseModel: initialData,
+    );
+    countdownManager.startCountdown();
   }
 }

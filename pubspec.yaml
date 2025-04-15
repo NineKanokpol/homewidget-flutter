@@ -40,9 +40,12 @@ dependencies:
   loading_animation_widget: ^1.2.0+4
   flutter_foreground_task: ^8.17.0
   shared_preferences: ^2.2.2
-  flutter_ringtone_player: ^4.0.0+4
+#  flutter_ringtone_player: ^4.0.0+4
+#  just_audio: ^0.9.46
+  audioplayers: ^6.4.0
   permission_handler: ^11.4.0
   home_widget: ^0.7.0+1
+  flutter_local_notifications: ^19.1.0
 
 
 dev_dependencies:
@@ -70,6 +73,7 @@ flutter:
   assets:
     - assets/
     - assets/audio/
+    - assets/audio/alarm_sound.mp3
 
   # To add assets to your application, add an assets section, like this:
   # assets:

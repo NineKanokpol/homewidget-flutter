@@ -7,13 +7,15 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
-import 'package:flutter_ringtone_player/flutter_ringtone_player.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:home_widget/home_widget.dart';
 import 'package:homewidget/api/api_http.dart';
 import 'package:homewidget/api/res/prayer_time_response.dart';
 import 'package:homewidget/countdown_manager.dart';
 import 'package:homewidget/permission_manager.dart';
+import 'package:homewidget/services/alram_service.dart';
+import 'package:homewidget/services/full_screen_custom.dart';
 import 'package:homewidget/services/live_activity_service.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -71,11 +73,16 @@ void callbackDispatcher() {
 void countdownTaskCallback() {
   // This callback will run in the background as part of the foreground service.
   // You can include your countdown logic here.
-  FlutterForegroundTask.setTaskHandler(CountdownTaskHandler());
+  FlutterForegroundTask.setTaskHandler(
+      CountdownTaskHandler(flutterLocalNotificationsPlugin));
 }
+
+final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+    FlutterLocalNotificationsPlugin();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // 1) Initialize the plugin.
   // if (Platform.isAndroid) {
   //   await AndroidAlarmManager.initialize();
   //   await requestExactAlarmPermission();
@@ -86,13 +93,7 @@ void main() async {
   //   "updatePrayerTimes",
   //   frequency: const Duration(hours: 20),
   // );
-  runApp(const MaterialApp(home: MyApp()));
-}
-
-Future<void> requestExactAlarmPermission() async {
-  if (await Permission.scheduleExactAlarm.isDenied) {
-    await Permission.scheduleExactAlarm.request();
-  }
+  runApp(MaterialApp(navigatorKey: GlobalVariable.navState, home: MyApp()));
 }
 
 class MyApp extends StatefulWidget {
@@ -122,6 +123,7 @@ class _MyAppState extends State<MyApp> {
     HomeWidget.setAppGroupId(groupAppId);
     // HomeWidget.registerInteractivityCallback(interactiveCallback);
     getLocationAndPrayTimeApi();
+    setttingLocalNoti();
     _checkPinability();
   }
 
@@ -139,11 +141,35 @@ class _MyAppState extends State<MyApp> {
     super.dispose();
   }
 
-  sendDataFollowPlatform() {
-    if (Platform.isAndroid) {
-      _sendDataAndroid();
-    } else {
-      _sendAndUpdateAndroid();
+  setttingLocalNoti() async {
+    const AndroidInitializationSettings androidSettings =
+        AndroidInitializationSettings('ic_launcher');
+    // 'ic_launcher' is the default app icon name in /android/app/src/main/res/mipmap-xxx
+
+    const InitializationSettings initSettings =
+        InitializationSettings(android: androidSettings);
+
+    await flutterLocalNotificationsPlugin.initialize(
+      initSettings,
+      onDidReceiveNotificationResponse: (response) async {
+        print('response: ${response.payload}');
+        await handleNotificationResponse(response);
+      },
+    );
+  }
+
+  Future<void> handleNotificationResponse(NotificationResponse response) async {
+    print('🔔 Notification tapped: ${response.payload}');
+    Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (context) => FullScreenCustom(
+                  payload: response.payload,
+                )));
+    try {
+      await AlarmService().playAlarm();
+    } catch (e) {
+      print('❌ Failed to play sound from notification: $e');
     }
   }
 
@@ -159,12 +185,14 @@ class _MyAppState extends State<MyApp> {
     // countDownIos();
     String jsonData = jsonEncode(prayerTimesList);
     await HomeWidget.saveWidgetData<String>('prayerTimes', jsonData);
-    await HomeWidget.saveWidgetData<String>('text1', prayTimeData.dateString ?? "");
+    await HomeWidget.saveWidgetData<String>(
+        'text1', prayTimeData.dateString ?? "");
     await HomeWidget.updateWidget(iOSName: iosWidgetName);
     await LiveActivityService.requestPushNotificationPermission()
         .then((value) async {
       await LiveActivityService.registerDevice();
       await LiveActivityService().listener();
+      await LiveActivityService().startLiveActivityWithCountdown();
     });
   }
 
@@ -175,7 +203,7 @@ class _MyAppState extends State<MyApp> {
     Timer.periodic(const Duration(seconds: 1), (timer) {
       final now = DateTime.now();
       // Replace the following with your real logic to compute the next prayer time.
-      final nextPrayer =getNextPrayerTime();
+      final nextPrayer = getNextPrayerTime();
       if (nextPrayer == null) {
         timer.cancel();
         _timerRunning = false;
@@ -254,12 +282,12 @@ class _MyAppState extends State<MyApp> {
             prayTimeData.time4 = value.time4;
             prayTimeData.time5 = value.time5;
             prayTimeData.time6 = value.time6;
-            savePrayerTimes(prayTimeData).then((test){
-              if(Platform.isAndroid){
-                funcForeGroundTaskInit().then((value1){
+            savePrayerTimes(prayTimeData).then((test) {
+              if (Platform.isAndroid) {
+                funcForeGroundTaskInit().then((value1) {
                   pinHomePlatform();
                 });
-              }else{
+              } else {
                 setDataIos();
               }
             });
@@ -270,21 +298,15 @@ class _MyAppState extends State<MyApp> {
     }
   }
 
-  DateTime? getNextPrayerTimeAndroid() {
-    // For example purposes, always return 5 minutes from now.
-    // Replace with your logic: parse prayTimeData and choose the next prayer.
-    return DateTime.now().add(const Duration(minutes: 5));
-  }
-
   DateTime? getNextPrayerTime() {
     // Assume these are your prayer times from API (adjust as necessary)
     List<String> prayerTimeStrings = [
       prayTimeData.time1 ?? "",
-      prayTimeData.time2  ?? "",
-      prayTimeData.time3  ?? "",
-      prayTimeData.time4  ?? "",
-      prayTimeData.time5  ?? "",
-      prayTimeData.time6  ?? "",
+      prayTimeData.time2 ?? "",
+      prayTimeData.time3 ?? "",
+      prayTimeData.time4 ?? "",
+      prayTimeData.time5 ?? "",
+      prayTimeData.time6 ?? "",
     ];
 
     DateTime now = DateTime.now();
@@ -297,7 +319,8 @@ class _MyAppState extends State<MyApp> {
       int minute = int.parse(parts[1]);
 
       // Create a DateTime for the prayer today.
-      DateTime prayerTime = DateTime(now.year, now.month, now.day, hour, minute);
+      DateTime prayerTime =
+          DateTime(now.year, now.month, now.day, hour, minute);
 
       // If the prayer time is earlier than now and it logically belongs
       // to the early morning of the next day, adjust the date.
@@ -317,8 +340,7 @@ class _MyAppState extends State<MyApp> {
     return null;
   }
 
-
-  Future<void> funcForeGroundTaskInit() async{
+  Future<void> funcForeGroundTaskInit() async {
     await PermissionManager.requestPermissions();
     FlutterForegroundTask.initCommunicationPort();
     FlutterForegroundTask.init(
@@ -326,7 +348,7 @@ class _MyAppState extends State<MyApp> {
         channelId: 'foreground_service',
         channelName: 'Foreground Service Notification',
         channelDescription:
-        'This notification appears when the foreground service is running.',
+            'This notification appears when the foreground service is running.',
         priority: NotificationPriority.HIGH,
         onlyAlertOnce: true,
         enableVibration: true,
@@ -392,36 +414,9 @@ class _MyAppState extends State<MyApp> {
     }
   }
 
-  Future _loadData() async {
-    try {
-      return Future.wait([
-        HomeWidget.getWidgetData<String>('title', defaultValue: 'Default Title')
-            .then((value) => _titleController.text = value ?? ''),
-        HomeWidget.getWidgetData<String>(
-          'message',
-          defaultValue: 'Default Message',
-        ).then((value) => _messageController.text = value ?? ''),
-      ]);
-    } on PlatformException catch (exception) {
-      debugPrint('Error Getting Data. $exception');
-    }
-  }
-
   Future<void> _sendAndUpdateAndroid() async {
     await _sendDataAndroid();
     await _updateWidget();
-  }
-
-  void _launchedFromWidget(Uri? uri) {
-    if (uri != null) {
-      showDialog(
-        context: context,
-        builder: (buildContext) => AlertDialog(
-          title: const Text('App started from HomeScreenWidget'),
-          content: Text('Here is the URI: $uri'),
-        ),
-      );
-    }
   }
 
   Future<void> _checkPinability() async {
@@ -457,24 +452,12 @@ class _MyAppState extends State<MyApp> {
                     ),
                     ElevatedButton(
                       onPressed: () async {
-                        if (Platform.isAndroid) {
-                          pinHomePlatform();
-                        }
+                        Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => FullScreenCustom()));
                       },
                       child: const Text('Pin Widget 4x2'),
-                    ),
-                    CupertinoButton.filled(
-                      disabledColor: Colors.pinkAccent,
-                      child: const Text("Start Live Activity"),
-                      onPressed: () async {
-                        LiveActivityService().startLiveActivity(
-                            data: LiveActivityModel(
-                              carModel: "Corolla",
-                              driverCode: "XJUAKF",
-                              minutesToArrive: 10,
-                              carArriveProgress: 0,
-                            ));
-                      },
                     ),
                   ],
                 ),
@@ -492,7 +475,7 @@ class _MyAppState extends State<MyApp> {
           startCountdown();
           HomeWidget.requestPinWidget(
             qualifiedAndroidName:
-            'com.example.homewidget.glance.HomeWidgetReceiver',
+                'com.example.homewidget.glance.HomeWidgetReceiver',
           );
         } else {
           _showAlertDialog(context, "คุณเพิ่ม widget ไม่ได้แล้ว",
@@ -565,4 +548,8 @@ class _MyAppState extends State<MyApp> {
       ),
     );
   }
+}
+
+class GlobalVariable {
+  static final GlobalKey<NavigatorState> navState = GlobalKey<NavigatorState>();
 }

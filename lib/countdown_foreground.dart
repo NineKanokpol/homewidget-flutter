@@ -1,11 +1,18 @@
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:flutter_foreground_task/task_handler.dart';
-import 'package:flutter_ringtone_player/flutter_ringtone_player.dart';
 import 'package:home_widget/home_widget.dart';
+import 'package:homewidget/main.dart';
+import 'package:homewidget/notification_manager.dart';
+import 'package:homewidget/services/alram_service.dart';
+import 'package:homewidget/services/full_screen_custom.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class CountdownTaskHandler extends TaskHandler {
-  int _start = 400; // For example, 400 seconds countdown
+  int _start = 400;
+
+  CountdownTaskHandler(flutterLocalNotificationsPlugin);
 
   @override
   Future<void> onStart(DateTime timestamp, TaskStarter starter) async {
@@ -45,8 +52,8 @@ class CountdownTaskHandler extends TaskHandler {
         time1,
         time2,
         time3,
-        time4,
-        "23:17",
+        "17:55",
+        time5,
         time6
       ];
 
@@ -92,11 +99,10 @@ class CountdownTaskHandler extends TaskHandler {
           // When time is up, play an alert sound.
           if (diffSeconds <= 0) {
             print("Prayer time reached. Playing alert sound.");
-            FlutterRingtonePlayer().play(
-              fromAsset: 'assets/audio/alarm_sound.mp3',
-              looping: false,
-              volume: 1.0,
-              asAlarm: true,
+            await NotificationManager.showFullScreenNotification(
+              "ถึงเวลาละหมาดแล้ว", // Title
+              "กดเพื่อปิดเสียง หรือดูรายละเอียด",
+              flutterLocalNotificationsPlugin,
             );
             displayCountdown = "ถึงเวลาละหมาดในอีก: 0 วินาที";
           }
