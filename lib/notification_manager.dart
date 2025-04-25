@@ -1,30 +1,37 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
-class NotificationManager{
-
-  static Future<void> showFullScreenNotification(String title, String body,FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin) async {
+class NotificationManager {
+  static Future<void> showFullScreenNotification(String title, String body,
+      FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin) async {
     AndroidNotificationDetails androidPlatformChannelSpecifics =
-    AndroidNotificationDetails(
-      'full_screen_channel_id',     // must be unique ID
-      'Full Screen Notifications',  // channel name
-      channelDescription: 'This channel is used for urgent notifications that turn screen on.',
-      importance: Importance.max,
-      priority: Priority.high,
-      category: AndroidNotificationCategory.alarm,
-      fullScreenIntent: true,
-      enableVibration: true
-      // You can also set additional flags like ongoing: true if needed.
+        AndroidNotificationDetails(
+            'full_screen_channel_id', // must be unique ID
+            'Full Screen Notifications', // channel name
+            channelDescription:
+                'This channel is used for urgent notifications that turn screen on.',
+            importance: Importance.max,
+            priority: Priority.high,
+            category: AndroidNotificationCategory.alarm,
+            fullScreenIntent: true,
+            enableVibration: true
+            // You can also set additional flags like ongoing: true if needed.
+            );
+    const DarwinNotificationDetails iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+      sound: 'audio/alarm_sound.mp3',
     );
 
-    NotificationDetails notificationDetails =
-    NotificationDetails(android: androidPlatformChannelSpecifics);
+    NotificationDetails notificationDetails = NotificationDetails(
+        android: androidPlatformChannelSpecifics, iOS: iosDetails);
 
     await flutterLocalNotificationsPlugin.show(
-      0,          // Notification ID
-      title,      // Notification title
-      body,       // Notification body
+      0, // Notification ID
+      title, // Notification title
+      body, // Notification body
       notificationDetails,
-      payload: 'alarm',  // Optional payload
+      payload: 'alarm', // Optional payload
     );
   }
 }

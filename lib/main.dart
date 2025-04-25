@@ -144,10 +144,15 @@ class _MyAppState extends State<MyApp> {
   setttingLocalNoti() async {
     const AndroidInitializationSettings androidSettings =
         AndroidInitializationSettings('ic_launcher');
+    const DarwinInitializationSettings darwinSettingsIOS =
+        DarwinInitializationSettings(
+            requestAlertPermission: true,
+            requestBadgePermission: true,
+            requestSoundPermission: true);
     // 'ic_launcher' is the default app icon name in /android/app/src/main/res/mipmap-xxx
 
-    const InitializationSettings initSettings =
-        InitializationSettings(android: androidSettings);
+    const InitializationSettings initSettings = InitializationSettings(
+        android: androidSettings, iOS: darwinSettingsIOS);
 
     await flutterLocalNotificationsPlugin.initialize(
       initSettings,
@@ -192,7 +197,8 @@ class _MyAppState extends State<MyApp> {
         .then((value) async {
       await LiveActivityService.registerDevice();
       await LiveActivityService().listener();
-      await LiveActivityService().startLiveActivityWithCountdown();
+      await LiveActivityService()
+          .startLiveActivityWithPrayerCountdown(prayTimeModel: prayTimeData);
     });
   }
 

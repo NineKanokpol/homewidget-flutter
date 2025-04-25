@@ -2,8 +2,10 @@ import 'dart:async';
 import 'dart:developer';
 import 'package:flutter/services.dart';
 
+import '../api/model/pray_time_model.dart';
 import '../countdown_manager.dart';
 
+/// Model sent to iOS Live Activity.
 class LiveActivityModel {
   final String carModel;
   final String driverCode;
@@ -25,28 +27,29 @@ class LiveActivityModel {
   };
 }
 
+/// Service to drive the iOS Live Activity via MethodChannel/EventChannel.
 class LiveActivityService {
   static const platform = MethodChannel('liveActivityChannel');
   static const listenerChannel = EventChannel('LiveActivityEvents');
   StreamSubscription? eventSubscription;
 
+  /// Listen for native events (e.g. tokens).
   Future<void> listener() async {
     eventSubscription = listenerChannel.receiveBroadcastStream().listen(
           (event) async {
         switch (event['eventType']) {
           case 'pushToStartToken':
-            dynamic tokenValue = event['value'];
-            log("pushToStartToken -> $tokenValue");
+            log("pushToStartToken -> ${event['value']}");
             break;
           case 'pushToUpdateToken':
-            dynamic tokenValue = event['value'];
-            log("pushToUpdateToken -> $tokenValue");
+            log("pushToUpdateToken -> ${event['value']}");
             break;
         }
       },
     );
   }
 
+  /// Ask iOS for push‑notification permission.
   static Future<void> requestPushNotificationPermission() async {
     try {
       await platform.invokeMethod("requestForNotificationPermission");
@@ -55,6 +58,7 @@ class LiveActivityService {
     }
   }
 
+  /// Register this device with your native Live Activity backend.
   static Future<void> registerDevice() async {
     try {
       await platform.invokeMethod("registerDevice");
@@ -63,65 +67,47 @@ class LiveActivityService {
     }
   }
 
-  // 1) Just start the live activity; don’t call the countdown from here.
+  /// Start the Live Activity with [data].
   Future<void> startLiveActivity({required LiveActivityModel data}) async {
     try {
-      await platform.invokeMethod(
-        'startLiveActivity',
-        data.toJson(),
-      );
+      await platform.invokeMethod('startLiveActivity', data.toJson());
     } on PlatformException catch (e) {
-      log("Failed to start live activity: '${e.message}'.");
+      log("Failed to start Live Activity: ${e.message}");
     }
-    print('startLiveActivity: data -> ${data.toJson()}');
+    log('LiveActivity start: ${data.toJson()}');
   }
 
-  // 2) Update with new data (e.g., every second).
+  /// Update the Live Activity with [data].
   Future<void> updateLiveActivity({required LiveActivityModel data}) async {
     try {
-      await platform.invokeMethod(
-        'updateLiveActivity',
-        data.toJson(),
-      );
+      await platform.invokeMethod('updateLiveActivity', data.toJson());
     } on PlatformException catch (e) {
-      log("Failed to update live activity: '${e.message}'.");
+      log("Failed to update Live Activity: ${e.message}");
+      rethrow;
     }
   }
 
-  // 3) End the activity once the countdown hits zero.
+  /// End the Live Activity.
   Future<void> endLiveActivity() async {
     try {
       await platform.invokeMethod('endLiveActivity');
     } on PlatformException catch (e) {
-      log("Failed to end live activity: '${e.message}'.");
+      log("Failed to end Live Activity: ${e.message}");
     }
   }
 
-  // 4) Start countdown from 300 seconds in one place.
-  //    Notice we do NOT create a new LiveActivityService here
-  //    nor do we call startLiveActivity() from inside another start method.
-  Future<void> startLiveActivityWithCountdown() async {
-    const int durationSeconds = 300;
-    // Calculate the expiration time.
-    final DateTime expirationTime = DateTime.now().add(Duration(seconds: durationSeconds));
+  /// Convenience: request permission, register, listen, then start countdown
+  Future<void> startLiveActivityWithPrayerCountdown({
+    required PrayTimeModel prayTimeModel,
+  }) async {
+    await requestPushNotificationPermission();
+    await registerDevice();
+    await listener();
 
-    // Use the duration (in seconds) for initial display.
-    LiveActivityModel initialData = LiveActivityModel(
-      carModel: 'Sedan',
-      driverCode: 'DR123',
-      minutesToArrive: durationSeconds, // initial value for UI purposes
-      carArriveProgress: 0,
-    );
-
-    // Step A: Start the live activity.
-    await startLiveActivity(data: initialData);
-
-    // Step B: Kick off the countdown, passing the expiration time.
-    CountdownManager countdownManager = CountdownManager(
-      expirationTime: expirationTime,
-      liveActivityService: this, // Use THIS instance
-      baseModel: initialData,
-    );
-    countdownManager.startCountdown();
+    // Start the countdown manager
+    PrayerCountdownManager(
+      liveActivityService: this,
+      prayTimeModel: prayTimeModel,
+    ).startCountdown();
   }
 }

@@ -1,202 +1,161 @@
-//
-//  LiveActivityWidgetLiveActivity.swift
-//  LiveActivityWidget
-//
-//  Created by Matheus Henrique on 13/01/25.
-//
-
 import ActivityKit
 import WidgetKit
 import SwiftUI
 
+// MARK: - Attributes
+
 struct LiveActivityWidgetAttributes: ActivityAttributes {
     public struct ContentState: Codable, Hashable {
-        var driverCode : String
-        var carModel : String
-        var minutesToArrive: Int
-        var carArriveProgress: Int
+        var driverCode: String
+        var carModel: String
+        var minutesToArrive: Int   // when > 0, show minutes
+        var carArriveProgress: Int // when minutesToArrive == 0, show seconds (0…30)
     }
 }
+
+// MARK: - Widget
 
 struct LiveActivityWidgetLiveActivity: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: LiveActivityWidgetAttributes.self) { context in
-            if(context.state.carArriveProgress < 100) {
-                CarArravingView(context: context).activityBackgroundTint(Color.black.opacity(0.7))
-            }else{
-                CarArrivedView(context: context).activityBackgroundTint(Color.black.opacity(0.7))
-            }
+            CarArravingView(context: context)
+                .activityBackgroundTint(Color.black.opacity(0.7))
         } dynamicIsland: { context in
             DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {
-                    if(context.state.carArriveProgress < 100){
-                        Text("Pickup in").foregroundColor(.white).padding(EdgeInsets(top: 4, leading: 12, bottom: 0, trailing: 12))
-                    }else{
-                        Text("Driver Arrives").foregroundColor(.white).padding(EdgeInsets(top: 4, leading: 12, bottom: 0, trailing: 12))
+                    if context.state.minutesToArrive > 0 {
+                        Text("เหลืออีก \(context.state.minutesToArrive) นาที")
+                    } else {
+                        Text("เหลืออีก \(context.state.carArriveProgress) วินาที")
                     }
-
                 }
                 DynamicIslandExpandedRegion(.trailing) {
-                    if(context.state.carArriveProgress < 100){
-                        Text("\(context.state.minutesToArrive) min").foregroundColor(.white).padding(EdgeInsets(top: 4, leading: 12, bottom: 0, trailing: 12))
-                    }else{
-                        Text("Enjoy your trip").foregroundColor(.white).padding(EdgeInsets(top: 4, leading: 12, bottom: 0, trailing: 12))
+                    // you can mirror leading or show an icon
+                    if context.state.minutesToArrive > 0 {
+                        Text("🕌")
+                    } else {
+                        Text("⏱")
                     }
-
                 }
                 DynamicIslandExpandedRegion(.bottom) {
-                    if(context.state.carArriveProgress < 100){
-                        ProgressBarWithCar(progress: context.state.carArriveProgress).padding(EdgeInsets(top: 0, leading: 42, bottom: 0, trailing: 42))
-                    }else{
-                        ZStack(alignment: Alignment(horizontal: .center, vertical: .center), content: {
-                            Circle().fill(Color.blue).frame(width: 52,height: 52)
-                            Image("flag").resizable().frame(width: 42,height: 42).scaledToFit().aspectRatio(contentMode: .fit)
-                        })
+                    if context.state.minutesToArrive > 0 {
+                        ProgressBarWithCar(minutesRemaining: context.state.minutesToArrive,
+                                          secondsRemaining: nil)
+                            .padding(.horizontal, 42)
+                    } else {
+                        ProgressBarWithCar(minutesRemaining: 0,
+                                          secondsRemaining: context.state.carArriveProgress)
+                            .padding(.horizontal, 42)
                     }
-
                 }
             } compactLeading: {
-                if(context.state.carArriveProgress < 100){Text("Pickup in").foregroundColor(.white)}
-                else{Text("Driver Arrives").foregroundColor(.white)}
-
+                if context.state.minutesToArrive > 0 {
+                    Text("\(context.state.minutesToArrive)m")
+                } else {
+                    Text("\(context.state.carArriveProgress)s")
+                }
             } compactTrailing: {
-                if(context.state.carArriveProgress < 100){ Text("\(context.state.minutesToArrive) min").foregroundColor(.white)}
-                else{  ZStack(alignment: Alignment(horizontal: .center, vertical: .center), content: {
-                    Circle().fill(Color.blue).frame(width: 32,height: 32)
-                    Image("flag").resizable().frame(width: 25,height: 25).scaledToFit().aspectRatio(contentMode: .fit)
-                })}
+                Image(systemName: "timer")
             } minimal: {
-                if(context.state.carArriveProgress < 100){Text("Driver on the way").foregroundColor(.white)}
-                else{Text("Driver Arrives").foregroundColor(.white)}
+                Text("⏱")
             }
         }
     }
 }
+
+// MARK: - Preview
 
 extension LiveActivityWidgetAttributes {
-    fileprivate static var preview: LiveActivityWidgetAttributes {
-        LiveActivityWidgetAttributes()
-    }
+    static var preview: LiveActivityWidgetAttributes { LiveActivityWidgetAttributes() }
 }
-
 extension LiveActivityWidgetAttributes.ContentState {
-    fileprivate static var model1: LiveActivityWidgetAttributes.ContentState {
-        LiveActivityWidgetAttributes.ContentState(driverCode: "Matheus", carModel: "Virtus", minutesToArrive: 10, carArriveProgress: 30)
-     }
-
-    fileprivate static var model2 : LiveActivityWidgetAttributes.ContentState {
-         LiveActivityWidgetAttributes.ContentState(driverCode: "Matheus", carModel: "Virtus", minutesToArrive: 10, carArriveProgress: 30)
-     }
+    static var model1 = LiveActivityWidgetAttributes.ContentState(
+        driverCode: "Matheus", carModel: "Virtus", minutesToArrive: 5, carArriveProgress: 30)
+    static var model2 = LiveActivityWidgetAttributes.ContentState(
+        driverCode: "Matheus", carModel: "Virtus", minutesToArrive: 0, carArriveProgress: 15)
 }
 
-#Preview("Notification", as: .content, using: LiveActivityWidgetAttributes.preview) {
-   LiveActivityWidgetLiveActivity()
-} contentStates: {
-    LiveActivityWidgetAttributes.ContentState.model1
-    LiveActivityWidgetAttributes.ContentState.model2
-}
+// MARK: - Views
 
-struct CarArravingView : View{
+struct CarArravingView: View {
     let context: ActivityViewContext<LiveActivityWidgetAttributes>
-
-    init(context: ActivityViewContext<LiveActivityWidgetAttributes>) {
-          self.context = context
-    }
-
-    var body : some View{
-        VStack{
-            HStack(alignment:.center, content: {
-                VStack(alignment: .leading, content: {
-                    Text("Pickup in \(context.state.minutesToArrive) min").semiBold20() .padding(EdgeInsets(top: 4, leading: 0, bottom: 0, trailing: 2))
-                    Text("\(context.state.driverCode) - \(context.state.carModel)").regular16()
-                })
+    var body: some View {
+        VStack(alignment: .leading) {
+            HStack {
+                VStack(alignment: .leading) {
+                    if context.state.minutesToArrive > 0 {
+                        Text("เหลืออีก \(context.state.minutesToArrive) นาที")
+                            .semiBold20()
+                    } else {
+                        Text("เหลืออีก \(context.state.carArriveProgress) วินาที")
+                            .semiBold20()
+                    }
+                    Text("\(context.state.driverCode) — \(context.state.carModel)")
+                        .regular16()
+                }
                 Spacer()
-                ZStack(alignment: Alignment(horizontal: .center, vertical: .center), content: {
-                    Circle().fill(Color.blue).frame(width: 48,height: 48)
-                    Image("driver").resizable().frame(width: 32,height: 32).scaledToFit().aspectRatio(contentMode: .fit)
-                })
-
-
-            })
-
-                ProgressBarWithCar(progress: context.state.carArriveProgress)
-
-
-    }.padding(EdgeInsets(top: 12, leading: 42, bottom: 0, trailing: 42))
+                Image(systemName: "truck")
+                    .resizable()
+                    .frame(width: 32, height: 32)
+                    .foregroundColor(.white)
+            }
+            if context.state.minutesToArrive > 0 {
+                ProgressBarWithCar(minutesRemaining: context.state.minutesToArrive,
+                                  secondsRemaining: nil)
+            } else {
+                ProgressBarWithCar(minutesRemaining: 0,
+                                  secondsRemaining: context.state.carArriveProgress)
+            }
+        }
+        .padding()
     }
 }
-
-struct CarArrivedView : View{
-    let context: ActivityViewContext<LiveActivityWidgetAttributes>
-
-    init(context: ActivityViewContext<LiveActivityWidgetAttributes>) {
-          self.context = context
-    }
-
-    var body : some View{
-        VStack{
-            HStack(alignment:.center, content: {
-                VStack(alignment: .leading, content: {
-                    Text("Your Driver Arrives").semiBold20() .padding(EdgeInsets(top: 4, leading: 0, bottom: 0, trailing: 2))
-                    Text("Have a confort trip").regular16()
-                })
-                Spacer()
-                ZStack(alignment: Alignment(horizontal: .center, vertical: .center), content: {
-                    Circle().fill(Color.blue).frame(width: 52,height: 52)
-                    Image("flag").resizable().frame(width: 42,height: 42).scaledToFit().aspectRatio(contentMode: .fit)
-                })
-
-            })
-
-
-    }.padding(EdgeInsets(top: 12, leading: 42, bottom: 16, trailing: 42))
-    }
-}
-
 
 struct ProgressBarWithCar: View {
-   var progress: Int = 0
+    var minutesRemaining: Int
+    var secondsRemaining: Int?
     @State private var barWidth: CGFloat = 0
-    init(progress: Int ) {
-        self.progress = progress
+
+    private var total: Double {
+        secondsRemaining != nil ? 30.0 : 5.0
     }
-    var body: some View {
-        VStack {
-            ZStack(alignment: .leading) {
-                ProgressView(value: Double(self.progress), total: 100)
-                    .progressViewStyle(LinearProgressViewStyle(tint: .white)).background(Color.gray.opacity(0.4)).frame(height: 28)
-                                        .cornerRadius(6)
-                    .overlay(
-                        GeometryReader { geometry in
-                            Color.clear.onAppear {
-                                self.barWidth = geometry.size.width
-                            }
-                        }
-                    )
-
-                ZStack {
-                    Image("car")
-                        .resizable()
-                        .frame(width: 32, height: 42)
-                        .scaledToFit()
-                }
-                .offset(x: CGFloat(Double(self.progress) / 100) * barWidth - 32)
-            }
-            .padding(EdgeInsets(top: 0, leading: 0, bottom: 4, trailing: 0))
-
-
+    private var progressValue: Double {
+        if let sec = secondsRemaining {
+            return Double(sec)
+        } else {
+            return Double(minutesRemaining)
         }
     }
+
+    var body: some View {
+        ZStack(alignment: .leading) {
+            ProgressView(value: progressValue, total: total)
+                .progressViewStyle(.linear)
+                .tint(.white)
+                .background(Color.gray.opacity(0.4))
+                .frame(height: 24)
+                .cornerRadius(6)
+                .overlay(GeometryReader { geo in
+                    Color.clear.onAppear { barWidth = geo.size.width }
+                })
+            Image(systemName: "car.fill")
+                .resizable()
+                .frame(width: 24, height: 24)
+                .offset(x: (CGFloat(progressValue)/CGFloat(total)) * barWidth - 24)
+        }
+        .padding(.vertical, 4)
+    }
 }
+
+// MARK: - Text Styles
 
 extension Text {
-
     func semiBold20() -> some View {
-        self.fontWeight(.semibold).font(.system(size: 20)).foregroundColor(.white)
+        self.font(.system(size: 20, weight: .semibold))
+            .foregroundColor(.white)
     }
-
     func regular16() -> some View {
-        self.fontWeight(.regular).font(.system(size: 16)).foregroundColor(.gray.opacity(0.8))
+        self.font(.system(size: 16))
+            .foregroundColor(Color.white.opacity(0.8))
     }
 }
-
