@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:home_widget/home_widget.dart';
 import 'package:homewidget/api/api_http.dart';
@@ -17,64 +18,134 @@ import 'package:homewidget/permission_manager.dart';
 import 'package:homewidget/services/alram_service.dart';
 import 'package:homewidget/services/full_screen_custom.dart';
 import 'package:homewidget/services/live_activity_service.dart';
+import 'package:homewidget/services/thai_province_map.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:workmanager/workmanager.dart';
 
 import 'api/model/pray_time_model.dart';
-import 'countdown_foreground.dart';
 
 /// Used for Background Updates using Workmanager Plugin
 @pragma("vm:entry-point")
 void callbackDispatcher() {
   Workmanager().executeTask((taskName, inputData) async {
-    final prefs = await SharedPreferences.getInstance();
     if (taskName == "updatePrayerTimes") {
       if (Platform.isAndroid) {
         try {
+          // String getRandomString(int length) {
+          //   const _chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+          //       'abcdefghijklmnopqrstuvwxyz'
+          //       '0123456789';
+          //   final rand = Random.secure();
+          //   return List.generate(
+          //       length, (_) => _chars[rand.nextInt(_chars.length)]).join();
+          // }
           await Geolocator.getCurrentPosition().then((value) async {
             await ApiHttp()
                 .fetchPrayerTimes(value.latitude, value.longitude, 7)
-                .then((value) async {
-              await prefs.setString("time1", value.time1);
-              await prefs.setString("time2", value.time2);
-              await prefs.setString("time3", value.time3);
-              await prefs.setString("time4", value.time4);
-              await prefs.setString("time5", value.time5);
-              await prefs.setString("time6", value.time6);
+                .then((valueApi) async {
               Future.wait([
-                HomeWidget.saveWidgetData<String>('fajrTime', "${value.time1}"),
                 HomeWidget.saveWidgetData<String>(
-                    'sunriseTime', "${value.time2}"),
+                    'fajrTime', "${valueApi.time1}"),
                 HomeWidget.saveWidgetData<String>(
-                    'dhuhrTime', "${value.time3}"),
-                HomeWidget.saveWidgetData<String>('asrTime', "${value.time4}"),
+                    'sunriseTime', "${valueApi.time2}"),
                 HomeWidget.saveWidgetData<String>(
-                    'maghribTime', "${value.time5}"),
-                HomeWidget.saveWidgetData<String>('ishaTime', "${value.time6}"),
+                    'dhuhrTime', "${valueApi.time3}"),
                 HomeWidget.saveWidgetData<String>(
-                    'titleDate', "${value.dateString}"),
+                    'asrTime', "${valueApi.time4}"),
+                HomeWidget.saveWidgetData<String>(
+                    'maghribTime', "${valueApi.time5}"),
+                HomeWidget.saveWidgetData<String>(
+                    'ishaTime', "${valueApi.time6}"),
+                HomeWidget.saveWidgetData<String>(
+                    'titleDate', valueApi.dateString),
               ]);
+              await HomeWidget.updateWidget(
+                androidName: 'HomeWidgetExampleProvider',
+                qualifiedAndroidName:
+                    'com.example.homewidget.glance.HomeWidgetReceiver',
+              );
+              print('updateSuccesss15,minute');
             });
           });
-          return true;
+          return Future.value(true);
         } catch (e) {
           debugPrint("Error in background task: $e");
-          return false;
+          return Future.value(false);
+        }
+      } else {
+        try {
+          print('updateIOS');
+          await Geolocator.getCurrentPosition().then((value) async {
+            await ApiHttp()
+                .fetchPrayerTimes(value.latitude, value.longitude, 7)
+                .then((prayTimeData) async {
+              List<Map<String, String>> prayerTimesList = [
+                {"name": "Fajr", "time": prayTimeData.time1},
+                {"name": "Sunrise", "time": prayTimeData.time2},
+                {"name": "Dhuhr", "time": prayTimeData.time3},
+                {"name": "Asr", "time": prayTimeData.time4},
+                {"name": "Maghrib", "time": prayTimeData.time5},
+                {"name": "Isha", "time": prayTimeData.time6},
+              ];
+              String jsonData = jsonEncode(prayerTimesList);
+              await HomeWidget.saveWidgetData<String>('prayerTimes', jsonData);
+              await HomeWidget.saveWidgetData<String>(
+                  'text1', prayTimeData.dateString);
+              await HomeWidget.updateWidget(iOSName: "MyHomeWidget");
+            });
+          });
+          return Future.value(true);
+        } catch (e) {
+          debugPrint("Error in background task IOS: $e");
+          return Future.value(false);
         }
       }
     }
-    return false;
+    return Future.value(true);
   });
 }
 
 @pragma("vm:entry-point")
-void countdownTaskCallback() {
-  // This callback will run in the background as part of the foreground service.
-  // You can include your countdown logic here.
-  FlutterForegroundTask.setTaskHandler(
-      CountdownTaskHandler(flutterLocalNotificationsPlugin));
+Future<void> interactiveCallback(Uri? data) async {
+  print("Refresh action triggered ${data}");
+  if (data?.host == 'actionrefresh') {
+    // Handle the refresh action
+    try {
+      await Geolocator.getCurrentPosition().then((value) async {
+        await ApiHttp()
+            .fetchPrayerTimes(value.latitude, value.longitude, 7)
+            .then((valueApi) async {
+          List<Placemark> placemark = await placemarkFromCoordinates(
+            value.latitude,
+            value.longitude,
+          );
+          String provice = ThaiProvinceMap.localizedAdminArea(
+              placemark[0].administrativeArea ?? "");
+          Future.wait([
+            HomeWidget.saveWidgetData<String>('fajrTime', "${valueApi.time1}"),
+            HomeWidget.saveWidgetData<String>(
+                'sunriseTime', "${valueApi.time2}"),
+            HomeWidget.saveWidgetData<String>('dhuhrTime', "${valueApi.time3}"),
+            HomeWidget.saveWidgetData<String>('asrTime', "${valueApi.time4}"),
+            HomeWidget.saveWidgetData<String>(
+                'maghribTime', "${valueApi.time5}"),
+            HomeWidget.saveWidgetData<String>('ishaTime', "${valueApi.time6}"),
+            HomeWidget.saveWidgetData<String>('titleDate', "${valueApi.dateString}"),
+            HomeWidget.saveWidgetData<String>('location', provice),
+          ]);
+          await HomeWidget.updateWidget(
+            androidName: 'HomeWidgetExampleProvider',
+            qualifiedAndroidName:
+                'com.example.homewidget.glance.HomeWidgetReceiver',
+          );
+        });
+      });
+    } catch (e) {
+      debugPrint("Error in interactive callback: $e");
+    }
+  }
 }
 
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
@@ -87,12 +158,35 @@ void main() async {
   //   await AndroidAlarmManager.initialize();
   //   await requestExactAlarmPermission();
   // }
-  // Workmanager().initialize(callbackDispatcher, isInDebugMode: kDebugMode);
-  // Workmanager().registerPeriodicTask(
-  //   "updatePrayerTimesTask",
-  //   "updatePrayerTimes",
-  //   frequency: const Duration(hours: 20),
-  // );
+  await Workmanager().initialize(
+    callbackDispatcher,
+    isInDebugMode: true,
+  );
+  if (Platform.isAndroid) {
+    Workmanager().registerPeriodicTask(
+      "updatePrayerTimesTask",
+      "updatePrayerTimes",
+      existingWorkPolicy: ExistingWorkPolicy.replace,
+      frequency: const Duration(days: 1),
+      constraints: Constraints(
+        networkType: NetworkType.connected,
+      ),
+    );
+  } else {
+    try {
+      Workmanager().registerOneOffTask(
+        "updatePrayerTimes",
+        "updatePrayerTimes",
+        initialDelay: Duration.zero,
+        existingWorkPolicy: ExistingWorkPolicy.replace,
+        constraints: Constraints(
+          networkType: NetworkType.connected,
+        ),
+      );
+    } catch (e) {
+      debugPrint("Background scheduling error: ${e}");
+    }
+  }
   runApp(MaterialApp(navigatorKey: GlobalVariable.navState, home: MyApp()));
 }
 
@@ -121,7 +215,7 @@ class _MyAppState extends State<MyApp> {
   void initState() {
     super.initState();
     HomeWidget.setAppGroupId(groupAppId);
-    // HomeWidget.registerInteractivityCallback(interactiveCallback);
+    HomeWidget.registerInteractivityCallback(interactiveCallback);
     getLocationAndPrayTimeApi();
     setttingLocalNoti();
     _checkPinability();
@@ -178,28 +272,31 @@ class _MyAppState extends State<MyApp> {
     }
   }
 
-  setDataIos() async {
+  setDataIos(String province) async {
     List<Map<String, String>> prayerTimesList = [
-      {"name": "Fajr", "time": prayTimeData.time1 ?? ""},
-      {"name": "Sunrise", "time": prayTimeData.time2 ?? ""},
-      {"name": "Dhuhr", "time": prayTimeData.time3 ?? ""},
-      {"name": "Asr", "time": prayTimeData.time4 ?? ""},
-      {"name": "Maghrib", "time": prayTimeData.time5 ?? ""},
-      {"name": "Isha", "time": prayTimeData.time6 ?? ""},
+      {"name": "ศุบฮิ", "time": prayTimeData.time1 ?? ""},
+      {"name": "ชุรูก", "time": prayTimeData.time2 ?? ""},
+      {"name": "ซุฮฺริ", "time": prayTimeData.time3 ?? ""},
+      {"name": "อัศริ", "time": prayTimeData.time4 ?? ""},
+      {"name": "มัฆริบ", "time": prayTimeData.time5 ?? ""},
+      {"name": "อิชาอฺ", "time": prayTimeData.time6 ?? ""},
     ];
     // countDownIos();
     String jsonData = jsonEncode(prayerTimesList);
     await HomeWidget.saveWidgetData<String>('prayerTimes', jsonData);
     await HomeWidget.saveWidgetData<String>(
         'text1', prayTimeData.dateString ?? "");
+    await HomeWidget.saveWidgetData<String>(
+        'text2', province);
+    print('rpovince $province');
     await HomeWidget.updateWidget(iOSName: iosWidgetName);
-    await LiveActivityService.requestPushNotificationPermission()
-        .then((value) async {
-      await LiveActivityService.registerDevice();
-      await LiveActivityService().listener();
-      await LiveActivityService()
-          .startLiveActivityWithPrayerCountdown(prayTimeModel: prayTimeData);
-    });
+    // await LiveActivityService.requestPushNotificationPermission()
+    //     .then((value) async {
+    //   await LiveActivityService.registerDevice();
+    //   await LiveActivityService().listener();
+    //   await LiveActivityService()
+    //       .startLiveActivityWithPrayerCountdown(prayTimeModel: prayTimeData);
+    // });
   }
 
   void countDownIos() {
@@ -258,50 +355,107 @@ class _MyAppState extends State<MyApp> {
     await FlutterForegroundTask.startService(
       notificationTitle: 'Countdown Running',
       notificationText: 'Your countdown is active',
-      callback: countdownTaskCallback,
+      // callback: countdownTaskCallback,
     );
   }
 
-  void getLocationAndPrayTimeApi() async {
-    if (!(await Geolocator.isLocationServiceEnabled())) {
+  Future<void> getLocationAndPrayTimeApi() async {
+    // 1) เช็คว่า GPS เปิดอยู่หรือไม่
+    if (!await Geolocator.isLocationServiceEnabled()) {
       _checkSettingGPS(context);
-    } else {
-      permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-      }
-      if (permission == LocationPermission.deniedForever) {
-        _showAlertDialog(context, "Alert! Location Allowed",
-            "You denied permission of location,so you should go to setting for open location");
-        return Future.error(
-            'Location permissions are permanently denied, we cannot request permissions.');
-      }
-      await Geolocator.getCurrentPosition().then((value) async {
-        await ApiHttp()
-            .fetchPrayerTimes(value.latitude, value.longitude, 7)
-            .then((value) {
-          setState(() {
-            prayTimeData.dateString = value.dateString;
-            prayTimeData.time1 = value.time1;
-            prayTimeData.time2 = value.time2;
-            prayTimeData.time3 = value.time3;
-            prayTimeData.time4 = value.time4;
-            prayTimeData.time5 = value.time5;
-            prayTimeData.time6 = value.time6;
-            savePrayerTimes(prayTimeData).then((test) {
-              if (Platform.isAndroid) {
-                funcForeGroundTaskInit().then((value1) {
-                  pinHomePlatform();
-                });
-              } else {
-                setDataIos();
-              }
-            });
-            isLoadingPage = false;
-          });
-        });
-      });
+      return;
     }
+
+    // 2) ขอ permission แบบ while-in-use
+    LocationPermission permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+    }
+    if (permission == LocationPermission.deniedForever) {
+      _showAlertDialog(
+        context,
+        "Alert! Location Allowed",
+        "คุณปฏิเสธการเข้าถึงตำแหน่งไปแล้ว กรุณาไปที่ Settings เพื่อเปิด Location",
+      );
+      return;
+    }
+
+    // 3) ขอ permission แบบ always (background)
+    if (Platform.isAndroid) {
+      if (permission != LocationPermission.always) {
+        final bgStatus = await Permission.locationAlways.request();
+        if (!bgStatus.isGranted) {
+          _showAlertDialog(context, "Alert! Location Allowed",
+              "You denied permission of location,so you should go to setting for open location");
+          return;
+        }
+      }
+    } else {
+      await ensureBackgroundLocation(context);
+    }
+
+    try {
+      final pos = await Geolocator.getCurrentPosition();
+      final resp = await ApiHttp().fetchPrayerTimes(
+        pos.latitude,
+        pos.longitude,
+        7,
+      );
+
+      setState(() {
+        prayTimeData
+          ..dateString = resp.dateString
+          ..time1 = resp.time1
+          ..time2 = resp.time2
+          ..time3 = resp.time3
+          ..time4 = resp.time4
+          ..time5 = resp.time5
+          ..time6 = resp.time6;
+        isLoadingPage = false;
+      });
+
+      await savePrayerTimes(prayTimeData);
+      List<Placemark> placemark = await placemarkFromCoordinates(
+        pos.latitude,
+        pos.longitude,
+      );
+      String provice = ThaiProvinceMap.localizedAdminArea(
+          placemark[0].administrativeArea ?? "");
+      if (Platform.isAndroid) {
+        await funcForeGroundTaskInit();
+        pinHomePlatform(provice);
+      } else {
+        setDataIos(provice);
+      }
+    } catch (e) {
+      debugPrint("Error fetching location/API: $e");
+    }
+  }
+
+  Future<bool> ensureBackgroundLocation(BuildContext ctx) async {
+    // 1) ขอ while-in-use
+    LocationPermission p = await Geolocator.checkPermission();
+    if (p == LocationPermission.denied) {
+      p = await Geolocator.requestPermission();
+    }
+    if (p == LocationPermission.deniedForever) {
+      _showAlertDialog(ctx, 'การเข้าถึง location ถูกปฏิเสธ',
+          'กรุณาเปิด Location ใน Settings');
+      return false;
+    }
+
+    // 2) ถ้าได้แค่ while-in-use ลองขอ always ผ่าน permission_handler
+    if (p != LocationPermission.always) {
+      final status = await Permission.locationAlways.request();
+      if (!status.isGranted) {
+        _showAlertDialog(ctx, 'การเข้าถึง location ถูกปฏิเสธ',
+            'กรุณาไปที่ Setting เพื่อตั้งค่า Location Always');
+        return false;
+      }
+    }
+
+    // ตอนนี้ได้ always แล้ว
+    return true;
   }
 
   DateTime? getNextPrayerTime() {
@@ -384,7 +538,7 @@ class _MyAppState extends State<MyApp> {
     await prefs.setString("time6", data.time6 ?? "");
   }
 
-  Future _sendDataAndroid() async {
+  Future _sendDataAndroid(String province) async {
     try {
       return Future.wait([
         HomeWidget.saveWidgetData<String>('fajrTime', "${prayTimeData.time1}"),
@@ -397,6 +551,7 @@ class _MyAppState extends State<MyApp> {
         HomeWidget.saveWidgetData<String>('ishaTime', "${prayTimeData.time6}"),
         HomeWidget.saveWidgetData<String>(
             'titleDate', "${prayTimeData.dateString}"),
+        HomeWidget.saveWidgetData<String>('location', province),
       ]);
     } on PlatformException catch (exception) {
       debugPrint('Error Sending Data. $exception');
@@ -405,23 +560,37 @@ class _MyAppState extends State<MyApp> {
 
   Future _updateWidget() async {
     try {
-      return Future.wait([
-        HomeWidget.updateWidget(
-          androidName: 'HomeWidgetExampleProvider',
-          // iOSName: 'HomeWidgetExample',
-        ),
-        HomeWidget.updateWidget(
-          qualifiedAndroidName:
-              'com.example.homewidget.glance.HomeWidgetReceiver',
-        ),
-      ]);
+      await Geolocator.getCurrentPosition().then((value) async {
+        await ApiHttp()
+            .fetchPrayerTimes(value.latitude, value.longitude, 7)
+            .then((valueApi) async {
+          Future.wait([
+            HomeWidget.saveWidgetData<String>('fajrTime', "${valueApi.time1}"),
+            HomeWidget.saveWidgetData<String>(
+                'sunriseTime', "${valueApi.time2}"),
+            HomeWidget.saveWidgetData<String>('dhuhrTime', "${valueApi.time3}"),
+            HomeWidget.saveWidgetData<String>('asrTime', "${valueApi.time4}"),
+            HomeWidget.saveWidgetData<String>(
+                'maghribTime', "${valueApi.time5}"),
+            HomeWidget.saveWidgetData<String>('ishaTime', "${valueApi.time6}"),
+            HomeWidget.saveWidgetData<String>(
+                'titleDate', "${valueApi.dateString}"),
+          ]);
+          await HomeWidget.updateWidget(
+            androidName: 'HomeWidgetExampleProvider',
+            qualifiedAndroidName:
+                'com.example.homewidget.glance.HomeWidgetReceiver',
+          );
+          print('updateSuccesss15,minute');
+        });
+      });
     } on PlatformException catch (exception) {
       debugPrint('Error Updating Widget. $exception');
     }
   }
 
   Future<void> _sendAndUpdateAndroid() async {
-    await _sendDataAndroid();
+    await _sendDataAndroid("");
     await _updateWidget();
   }
 
@@ -441,6 +610,17 @@ class _MyAppState extends State<MyApp> {
       appBar: AppBar(
         title: const Text('HomeWidget Example'),
       ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          // Trigger background task manually
+          Workmanager().registerOneOffTask(
+            "manualRefresh", // unique name
+            "updatePrayerTimes", // ชื่อ task เดิมที่เรากำหนดไว้
+            initialDelay: Duration.zero,
+          );
+        },
+        child: Icon(Icons.refresh),
+      ),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -458,10 +638,7 @@ class _MyAppState extends State<MyApp> {
                     ),
                     ElevatedButton(
                       onPressed: () async {
-                        Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) => FullScreenCustom()));
+                        pinHomePlatform("");
                       },
                       child: const Text('Pin Widget 4x2'),
                     ),
@@ -472,13 +649,13 @@ class _MyAppState extends State<MyApp> {
     );
   }
 
-  pinHomePlatform() async {
+  pinHomePlatform(String province) async {
     if (_isRequestPinWidgetSupported) {
       final widgets = await HomeWidget.getInstalledWidgets();
       setState(() {
         if (widgets.length <= 0) {
-          _sendDataAndroid();
-          startCountdown();
+          _sendDataAndroid(province);
+          // startCountdown();
           HomeWidget.requestPinWidget(
             qualifiedAndroidName:
                 'com.example.homewidget.glance.HomeWidgetReceiver',
@@ -534,7 +711,7 @@ class _MyAppState extends State<MyApp> {
           CupertinoDialogAction(
             isDefaultAction: true,
             child: Text(
-              "Agree",
+              "Setting",
               style: TextStyle(
                 fontSize: 18,
                 color: Colors.red,
@@ -542,6 +719,7 @@ class _MyAppState extends State<MyApp> {
             ),
             onPressed: () {
               Navigator.pop(context);
+              Geolocator.openLocationSettings();
             },
           ),
           CupertinoDialogAction(

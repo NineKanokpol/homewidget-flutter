@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 54;
+	objectVersion = 77;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -20,6 +20,7 @@
 		97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FD1CF9000F007C117D /* Assets.xcassets */; };
 		97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */; };
 		B3D388F35097CAB0E405EFF7 /* Pods_Runner.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 87A4D5DAFB4D243B079F1B71 /* Pods_Runner.framework */; };
+		F238F242E3E792E79A4E4B04 /* Pods_LiveActivityWidgetExtension.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5AF97030B38DD7B1BB939ED1 /* Pods_LiveActivityWidgetExtension.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -76,6 +77,8 @@
 		3D5577062D9E63E5006A2FC8 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		3D5577082D9E63E5006A2FC8 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		3D55771B2D9E6416006A2FC8 /* Runner.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Runner.entitlements; sourceTree = "<group>"; };
+		4E7DC04B87E9F1B63D3A7FAB /* Pods-LiveActivityWidgetExtension.profile.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-LiveActivityWidgetExtension.profile.xcconfig"; path = "Target Support Files/Pods-LiveActivityWidgetExtension/Pods-LiveActivityWidgetExtension.profile.xcconfig"; sourceTree = "<group>"; };
+		5AF97030B38DD7B1BB939ED1 /* Pods_LiveActivityWidgetExtension.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_LiveActivityWidgetExtension.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Runner-Bridging-Header.h"; sourceTree = "<group>"; };
 		74858FAE1ED2DC5600515810 /* AppDelegate.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		7AFA3C8E1D35360C0083082E /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Release.xcconfig; path = Flutter/Release.xcconfig; sourceTree = "<group>"; };
@@ -89,9 +92,11 @@
 		97C146FD1CF9000F007C117D /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		97C147001CF9000F007C117D /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		97C147021CF9000F007C117D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		C1220C22F725E89F744F3A0F /* Pods-LiveActivityWidgetExtension.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-LiveActivityWidgetExtension.release.xcconfig"; path = "Target Support Files/Pods-LiveActivityWidgetExtension/Pods-LiveActivityWidgetExtension.release.xcconfig"; sourceTree = "<group>"; };
 		CD3D0DBFD353CD6B900F2A73 /* Pods-Runner.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.release.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.release.xcconfig"; sourceTree = "<group>"; };
 		D08083F98B6378C7798AD96F /* Pods-RunnerTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.debug.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.debug.xcconfig"; sourceTree = "<group>"; };
 		D2C64098B30E8F8D54D3BB3C /* Pods_RunnerTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_RunnerTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		DB6FF0F935ECB1532E9F674D /* Pods-LiveActivityWidgetExtension.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-LiveActivityWidgetExtension.debug.xcconfig"; path = "Target Support Files/Pods-LiveActivityWidgetExtension/Pods-LiveActivityWidgetExtension.debug.xcconfig"; sourceTree = "<group>"; };
 		FB19FEBE39CE1F69C77B51C3 /* Pods-Runner.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.debug.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.debug.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -131,6 +136,7 @@
 			files = (
 				3D2C65E92DAD3944000B17F9 /* SwiftUI.framework in Frameworks */,
 				3D2C65E82DAD3944000B17F9 /* WidgetKit.framework in Frameworks */,
+				F238F242E3E792E79A4E4B04 /* Pods_LiveActivityWidgetExtension.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -222,6 +228,9 @@
 				D08083F98B6378C7798AD96F /* Pods-RunnerTests.debug.xcconfig */,
 				83B4A33F2733F458C1690799 /* Pods-RunnerTests.release.xcconfig */,
 				3B3A869982DE185046210B68 /* Pods-RunnerTests.profile.xcconfig */,
+				DB6FF0F935ECB1532E9F674D /* Pods-LiveActivityWidgetExtension.debug.xcconfig */,
+				C1220C22F725E89F744F3A0F /* Pods-LiveActivityWidgetExtension.release.xcconfig */,
+				4E7DC04B87E9F1B63D3A7FAB /* Pods-LiveActivityWidgetExtension.profile.xcconfig */,
 			);
 			path = Pods;
 			sourceTree = "<group>";
@@ -233,6 +242,7 @@
 				D2C64098B30E8F8D54D3BB3C /* Pods_RunnerTests.framework */,
 				3D5577062D9E63E5006A2FC8 /* WidgetKit.framework */,
 				3D5577082D9E63E5006A2FC8 /* SwiftUI.framework */,
+				5AF97030B38DD7B1BB939ED1 /* Pods_LiveActivityWidgetExtension.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -263,6 +273,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 3D2C65F82DAD3946000B17F9 /* Build configuration list for PBXNativeTarget "LiveActivityWidgetExtension" */;
 			buildPhases = (
+				D8008DF92801287DDF28717E /* [CP] Check Pods Manifest.lock */,
 				3D2C65E32DAD3944000B17F9 /* Sources */,
 				3D2C65E42DAD3944000B17F9 /* Frameworks */,
 				3D2C65E52DAD3944000B17F9 /* Resources */,
@@ -275,8 +286,6 @@
 				3D2C65EA2DAD3944000B17F9 /* LiveActivityWidget */,
 			);
 			name = LiveActivityWidgetExtension;
-			packageProductDependencies = (
-			);
 			productName = LiveActivityWidgetExtension;
 			productReference = 3D2C65E72DAD3944000B17F9 /* LiveActivityWidgetExtension.appex */;
 			productType = "com.apple.product-type.app-extension";
@@ -312,15 +321,15 @@
 		97C146E61CF9000F007C117D /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-			    SystemCapabilities = {
-            	    com.apple.BackgroundModes = {
-            		    enabled = 1;
-            	    };
-                };
 				BuildIndependentTargetsInParallel = YES;
 				LastSwiftUpdateCheck = 1600;
 				LastUpgradeCheck = 1510;
 				ORGANIZATIONNAME = "";
+				SystemCapabilities = {
+					com.apple.BackgroundModes = {
+						enabled = 1;
+					};
+				};
 				TargetAttributes = {
 					331C8080294A63A400263BE5 = {
 						CreatedOnToolsVersion = 14.0;
@@ -476,6 +485,28 @@
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
+		D8008DF92801287DDF28717E /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-LiveActivityWidgetExtension-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
 		D9B59BB90BC43B0ADCF5484B /* [CP] Embed Pods Frameworks */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
@@ -615,7 +646,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 6;
 				DEVELOPMENT_TEAM = 6A6RLBPW4R;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
@@ -685,6 +716,7 @@
 		};
 		3D2C65F92DAD3946000B17F9 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = DB6FF0F935ECB1532E9F674D /* Pods-LiveActivityWidgetExtension.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
@@ -727,6 +759,7 @@
 		};
 		3D2C65FA2DAD3946000B17F9 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = C1220C22F725E89F744F3A0F /* Pods-LiveActivityWidgetExtension.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
@@ -766,6 +799,7 @@
 		};
 		3D2C65FB2DAD3946000B17F9 /* Profile */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 4E7DC04B87E9F1B63D3A7FAB /* Pods-LiveActivityWidgetExtension.profile.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
@@ -921,7 +955,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 6;
 				DEVELOPMENT_TEAM = 6A6RLBPW4R;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
@@ -947,7 +981,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 6;
 				DEVELOPMENT_TEAM = 6A6RLBPW4R;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;

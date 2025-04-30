@@ -24,6 +24,7 @@ import androidx.glance.layout.*
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
+import androidx.glance.appwidget.updateAll
 import es.antonborri.home_widget.HomeWidgetBackgroundIntent
 import es.antonborri.home_widget.actionStartActivity
 import com.example.homewidget.MainActivity
@@ -50,6 +51,7 @@ class HomeWidgetGlanceAppWidget : GlanceAppWidget() {
         val asrTime = data.getString("asrTime", "") ?: ""
         val maghribTime = data.getString("maghribTime", "") ?: ""
         val ishaTime = data.getString("ishaTime", "") ?: ""
+        val location = data.getString("location", "") ?: ""
         val countdownText = data.getString("countdown", "") ?: ""
 
         // Root container: vertical layout, black background, 8dp padding, clickable
@@ -58,84 +60,124 @@ class HomeWidgetGlanceAppWidget : GlanceAppWidget() {
                 .fillMaxSize()
                 .background(ImageProvider(R.drawable.rounded_widget_bg))
                 .padding(8.dp)
-                .clickable(onClick = actionStartActivity<MainActivity>(context))
         ) {
             // Top Row: Hijri date (left) and Location (right)
-            Row(modifier = GlanceModifier.fillMaxWidth()) {
+            Row(
+                modifier = GlanceModifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically      // จัดให้ไอคอน Divider กึ่งกลาง
+            ) {
+                Image(
+                    provider = ImageProvider(R.drawable.logo),
+                    contentDescription = "Logo",
+                    modifier = GlanceModifier.size(16.dp)
+                )
+                Spacer(GlanceModifier.width(8.dp))
                 Text(
                     text = titleDate,
-                    style = TextStyle(fontSize = 18.sp, color = ColorProvider(Color.White)),
+                    modifier = GlanceModifier.defaultWeight(),
+                    style = TextStyle(fontSize = 18.sp, color = ColorProvider(Color.White))
                 )
+                Row(
+                    modifier = GlanceModifier.wrapContentSize(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = location,
+                        style = TextStyle(fontSize = 14.sp, color = ColorProvider(Color.White))
+                    )
+                    Spacer(GlanceModifier.width(4.dp))
+                    Image(
+                        provider = ImageProvider(R.drawable.refresh),  // ใส่ไอคอนรีเฟรชของคุณ
+                        contentDescription = "Refresh",
+                        modifier = GlanceModifier
+                            .size(16.dp)
+                            .clickable(onClick = actionRunCallback<RefreshAction>())
+                    )
+                }
             }
 
-            Spacer(modifier = GlanceModifier.height(4.dp))
+            Spacer(modifier = GlanceModifier.height(8.dp))
 
             // Countdown text (green)
-            Text(
-                text = "$timerValue",
-                style = TextStyle(fontSize = 16.sp, color = ColorProvider(Color(0xFF00FF00)))
-            )
-
-            Spacer(modifier = GlanceModifier.height(4.dp))
+//            Text(
+//                text = "$timerValue",
+//                style = TextStyle(fontSize = 16.sp, color = ColorProvider(Color(0xFF00FF00)))
+//            )
+//
+//            Spacer(modifier = GlanceModifier.height(4.dp))
 
             // Divider line
             Box(
                 modifier = GlanceModifier
                     .fillMaxWidth()
-                    .height(1.dp)
-                    .background(ColorProvider(Color.DarkGray))
+                    .height(2.dp)
+                    .background(
+                        ColorProvider(
+                            Color(0xFF748825)
+                        )
+                    )
             ) { }
 
-            Spacer(modifier = GlanceModifier.height(4.dp))
+            Spacer(modifier = GlanceModifier.height(20.dp))
 
             // Row of 6 cells for prayer times
-            Row(modifier = GlanceModifier.fillMaxWidth()) {
-                Box(modifier = GlanceModifier.defaultWeight()) {
-                    PrayerTimeCell("Fajr", fajrTime, R.drawable.sunny)
-                }
-                Box(modifier = GlanceModifier.defaultWeight()) {
-                    PrayerTimeCell("Sunrise", sunriseTime, R.drawable.sunny)
-                }
-                Box(modifier = GlanceModifier.defaultWeight()) {
-                    PrayerTimeCell("Dhuhr", dhuhrTime, R.drawable.sunny)
-                }
-                Box(modifier = GlanceModifier.defaultWeight()) {
-                    PrayerTimeCell("Asr", asrTime, R.drawable.sunny)
-                }
-                Box(modifier = GlanceModifier.defaultWeight()) {
-                    PrayerTimeCell("Mag", maghribTime, R.drawable.sunny)
-                }
-                Box(modifier = GlanceModifier.defaultWeight()) {
-                    PrayerTimeCell("Isha", ishaTime, R.drawable.sunny)
+            //ศุบฮิ , ชุรูก  , ซุฮฺริ , อัศริ , มัฆริบ , อิชาอฺ
+            val prayers = listOf(
+                Triple("ศุบฮิ", fajrTime, R.drawable.sunny_up),
+                Triple("ชุรูก", sunriseTime, R.drawable.sunny_up2),
+                Triple("ซุฮฺริ", dhuhrTime, R.drawable.sunny_full),
+                Triple("อัศริ", asrTime, R.drawable.sunny_clound),
+                Triple("มัฆริบ", maghribTime, R.drawable.sunny_down),
+                Triple("อิชาอฺ", ishaTime, R.drawable.moon)
+            )
+
+            Row(
+                modifier = GlanceModifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                prayers.forEachIndexed { idx, (name, time, iconRes) ->
+                    Box(
+                        modifier = GlanceModifier.defaultWeight(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        PrayerTimeCell(name, time, iconRes)
+                    }
                 }
             }
         }
     }
 
     @Composable
+    private fun VerticalDivider() {
+        Box(
+            modifier = GlanceModifier
+                .height(50.dp)
+                .width(1.dp)
+                .background(ColorProvider(Color.DarkGray))
+        ) {}
+    }
+
+    @Composable
     private fun PrayerTimeCell(prayerName: String, prayerTime: String, iconRes: Int) {
         Column(
             modifier = GlanceModifier
-                .padding(horizontal = 4.dp) // Increase horizontal padding
-                , // Expands to available space in Row
+                .wrapContentSize(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Image(
                 provider = ImageProvider(iconRes),
                 contentDescription = prayerName,
-                modifier = GlanceModifier
-                    .width(30.dp)
-                    .height(30.dp)
+                modifier = GlanceModifier.size(24.dp)
             )
-            Spacer(modifier = GlanceModifier.height(4.dp))
+            Spacer(GlanceModifier.height(2.dp))
             Text(
                 text = prayerName,
-                style = TextStyle(fontSize = 16.sp, color = ColorProvider(Color.White))
+                style = TextStyle(fontSize = 12.sp, color = ColorProvider(Color.White))
             )
-            Spacer(modifier = GlanceModifier.height(2.dp))
+            Spacer(GlanceModifier.height(2.dp))
             Text(
                 text = prayerTime,
-                style = TextStyle(fontSize = 16.sp, color = ColorProvider(Color.White))
+                style = TextStyle(fontSize = 12.sp, color = ColorProvider(Color.White))
             )
         }
     }
@@ -151,5 +193,21 @@ class InteractiveAction : ActionCallback {
             context, Uri.parse("homeWidgetExample://titleClicked")
         )
         backgroundIntent.send()
+    }
+}
+
+class RefreshAction : ActionCallback {
+    override suspend fun onAction(
+        context: Context,
+        glanceId: GlanceId,
+        parameters: androidx.glance.action.ActionParameters
+    ) {
+        val backgroundIntent = HomeWidgetBackgroundIntent.getBroadcast(
+            context,
+            Uri.parse("homeWidgetExample://actionRefresh")
+        )
+        backgroundIntent.send()
+
+        HomeWidgetGlanceAppWidget().updateAll(context)
     }
 }

@@ -8,6 +8,8 @@
 import WidgetKit
 import SwiftUI
 
+private let widgetGroupId = "group.com.tnd.homewidget"
+
 struct PrayerTime: Codable, Hashable {
     let name: String
     let time: String
@@ -44,12 +46,12 @@ private func getDataFromFlutter() -> SimpleEntry {
         }
         // Fallback default data.
         return [
-            PrayerTime(name: "Fajr", time: ""),
-            PrayerTime(name: "Sunrise", time: ""),
-            PrayerTime(name: "Dhuhr", time: ""),
-            PrayerTime(name: "Asr", time: ""),
-            PrayerTime(name: "Maghrib", time: ""),
-            PrayerTime(name: "Isha", time: "")
+            PrayerTime(name: "ศุบฮิ", time: ""),
+            PrayerTime(name: "ชุรูก", time: ""),
+            PrayerTime(name: "ซุฮฺริ", time: ""),
+            PrayerTime(name: "อัศริ", time: ""),
+            PrayerTime(name: "มัฆริบ", time: ""),
+            PrayerTime(name: "อิชาอฺ", time: "")
         ]
     }
 
@@ -83,33 +85,80 @@ private func getDataFromFlutter() -> SimpleEntry {
 struct LiveActivityWidgetEntryView : View {
      var entry: SimpleEntry
 
+     private let iconMap: [String: String] = [
+             "ศุบฮิ":  "sunny_up",
+             "ชุรูก":  "sunny_up2",
+             "ซุฮฺริ": "sunny_full",
+             "อัศริ":  "sunny_clound",
+             "มัฆริบ":"sunny_down",
+             "อิชาอฺ":"moon"
+         ]
+
         var body: some View {
             ZStack {
                 VStack(alignment: .leading, spacing: 8) {
                     // Top row: date/title on the left, timer on the right
-                    HStack {
-                        Text(entry.text)
-                            .foregroundColor(.white)
-                            .font(.headline)
-                            // Ensure it doesn't wrap
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.8)
+                    HStack(alignment: .center, spacing: 12) {
+                                        HStack(spacing: 8) {
+                                                            Image("logo")
+                                                                .renderingMode(.original)
+                                                                .resizable()
+                                                                .scaledToFit()
+                                                                .frame(width: 20, height: 20)
+                                                                .foregroundColor(.white)
 
+                                                            Text(entry.text)
+                                                                .foregroundColor(.white)
+                                                                .font(.headline)
+                                                                .lineLimit(1)
+                                                                .minimumScaleFactor(0.75)
+                                                        }
 
-                    }
+                                        Spacer()
+
+                                        HStack(spacing: 8) {
+                                                Text(entry.additionalText)
+                                                  .foregroundColor(.white)
+                                                  .font(.subheadline)
+                                                  .lineLimit(1)
+                                                  .minimumScaleFactor(0.75)
+
+                                                   Button {
+                                                                                                       WidgetCenter.shared.reloadAllTimelines()
+                                                                                                   } label: {
+                                                                                                       Image("refresh")
+                                                                                                         .renderingMode(.original)
+                                                                                                         .resizable()
+                                                                                                         .scaledToFit()
+                                                                                                         .frame(width: 24, height: 24)
+                                                                                                   }
+                                                                                                   .buttonStyle(.plain)
+
+                                              }
+                                    }.frame(maxWidth: .infinity)
 
                     // Divider
                     Divider()
-                        .background(Color.white)
+                      .frame(height: 2)
+                      .background(
+                        Color(
+                          red:   Double(0x74) / 255.0,
+                          green: Double(0x88) / 255.0,
+                          blue:  Double(0x25) / 255.0
+                        )
+                      )
 
                     // Prayer times row
-                    HStack(alignment: .center, spacing: 16) {
+                    HStack(alignment: .center, spacing: 0) {
                         ForEach(entry.prayerTimes, id: \.name) { prayer in
                             VStack(spacing: 4) {
                                 // Circle icon
-                                Circle()
-                                    .fill(Color.yellow)
-                                    .frame(width: 24, height: 24)
+                                let iconName = iconMap[prayer.name] ?? "defaultIcon"
+                                    Image(iconName)
+                                      .resizable()
+                                      .scaledToFit()
+                                      .frame(width: 24, height: 24)
+                                      .foregroundColor(.white)
 
                                 // Prayer name
                                 Text(prayer.name)
@@ -124,9 +173,9 @@ struct LiveActivityWidgetEntryView : View {
                                     .font(.caption)
                                     .lineLimit(1)
                                     .minimumScaleFactor(0.8)
-                            }
+                            }.frame(maxWidth: .infinity)
                         }
-                    }
+                    }.frame(maxWidth: .infinity)
                 }
                 // Slight padding around content to match the screenshot spacing
                 .padding(8)
@@ -141,7 +190,13 @@ struct LiveActivityWidget: Widget {
         StaticConfiguration(kind: kind, provider: Provider()) { entry in
             if #available(iOS 17.0, *) {
                 LiveActivityWidgetEntryView(entry: entry)
-                    .containerBackground(.fill.tertiary, for: .widget)
+                    .containerBackground(for: .widget) {
+                        Color(
+                          red:   0x18 / 255.0,
+                          green: 0x2E / 255.0,
+                          blue:  0x37 / 255.0
+                        )
+                    }
             } else {
                 LiveActivityWidgetEntryView(entry: entry)
                     .padding()
